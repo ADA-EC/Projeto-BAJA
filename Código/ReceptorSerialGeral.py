@@ -1,9 +1,11 @@
 import serial
+from abc import ABC
+from abc import abstractmethod
 
 
-class ReceptorSerialGeral(object):
+class ReceptorSerialGeral(ABC):
 
-	def __init__(self, PORT='COM6', BaudRate = 9600):
+	def __init__(self, PORT, BaudRate):
 		# configura a conexão serial
 		# detalhes em "https://pythonhosted.org/pyserial/pyserial_api.html"
 		ser = serial.Serial(
@@ -13,10 +15,9 @@ class ReceptorSerialGeral(object):
 			stopbits=serial.STOPBITS_ONE,
 			bytesize=serial.EIGHTBITS
 		)
-		
+		print ('Foo method in class B')
 		# abre a conexão serial
-		ser.open()
+		#ser.open()
 	
-	@abstractmethod	
 	def Leitura(self):
 		pass
