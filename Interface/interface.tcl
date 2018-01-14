@@ -18,17 +18,17 @@ set vTcl(active_menu_fg) #000000
 # vTcl Code to Load User Fonts
 
 vTcl:font:add_font \
-    "-family {Segoe UI} -size 14 -weight bold -slant roman -underline 0 -overstrike 0" \
+    "-family {Segoe UI} -size 24 -weight bold -slant roman -underline 0 -overstrike 0" \
     user \
-    vTcl:font12
+    vTcl:font20
 vTcl:font:add_font \
-    "-family {Segoe UI} -size 12 -weight normal -slant roman -underline 0 -overstrike 0" \
+    "-family {Segoe UI} -size 17 -weight normal -slant roman -underline 0 -overstrike 0" \
     user \
-    vTcl:font13
+    vTcl:font21
 vTcl:font:add_font \
-    "-family {Segoe UI} -size 10 -weight normal -slant roman -underline 0 -overstrike 0" \
+    "-family {Segoe UI} -size 19 -weight normal -slant roman -underline 0 -overstrike 0" \
     user \
-    vTcl:font14
+    vTcl:font24
 #################################
 #LIBRARY PROCEDURES
 #
@@ -78,7 +78,7 @@ proc vTclWindow.top37 {base} {
         -background {#d9d9d9} -highlightbackground {#d9d9d9} \
         -highlightcolor black 
     wm focusmodel $top passive
-    wm geometry $top 904x416+225+184
+    wm geometry $top 1366x705+112+149
     update
     # set in toplevel.wgt.
     global vTcl
@@ -87,8 +87,7 @@ proc vTclWindow.top37 {base} {
     wm minsize $top 120 1
     wm overrideredirect $top 0
     wm resizable $top 1 1
-    wm deiconify $top
-    wm title $top "Interface BAJA"
+    wm title $top "Telemetria EESC USP BAJA"
     vTcl:DefineAlias "$top" "Toplevel1" vTcl:Toplevel:WidgetProc "" 1
     canvas $top.can44 \
         -background white -borderwidth 2 -closeenough 1.0 -height 265 \
@@ -108,203 +107,193 @@ proc vTclWindow.top37 {base} {
         -insertbackground black -relief ridge -selectbackground {#c4c4c4} \
         -selectforeground black -width 378 
     vTcl:DefineAlias "$top.can46" "Canvas3" vTcl:WidgetProc "Toplevel1" 1
-    label $top.lab50 \
-        -activebackground {#f9f9f9} -activeforeground black \
-        -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -relief ridge -text Choke 
-    vTcl:DefineAlias "$top.lab50" "Label1" vTcl:WidgetProc "Toplevel1" 1
     label $top.lab51 \
         -activebackground {#f9f9f9} -activeforeground black \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -relief ridge -text 0 
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
+        -highlightbackground {#d9d9d9} -highlightcolor black -relief ridge \
+        -text 0 
     vTcl:DefineAlias "$top.lab51" "Label2" vTcl:WidgetProc "Toplevel1" 1
     label $top.lab52 \
         -activebackground {#f9f9f9} -activeforeground black \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -relief ridge -text 0 
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
+        -highlightbackground {#d9d9d9} -highlightcolor black -relief ridge \
+        -text 0 
     vTcl:DefineAlias "$top.lab52" "Label3" vTcl:WidgetProc "Toplevel1" 1
     label $top.lab53 \
         -activebackground {#f9f9f9} -activeforeground black \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -relief ridge -text 0 
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
+        -highlightbackground {#d9d9d9} -highlightcolor black -relief ridge \
+        -text 0 
     vTcl:DefineAlias "$top.lab53" "Label4" vTcl:WidgetProc "Toplevel1" 1
     label $top.lab54 \
         -activebackground {#f9f9f9} -activeforeground black \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -relief ridge -text 0 
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
+        -highlightbackground {#d9d9d9} -highlightcolor black -relief ridge \
+        -text 0 
     vTcl:DefineAlias "$top.lab54" "Label5" vTcl:WidgetProc "Toplevel1" 1
     label $top.lab55 \
         -activebackground {#f9f9f9} -activeforeground black \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -relief ridge -text 0 
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
+        -highlightbackground {#d9d9d9} -highlightcolor black -relief ridge \
+        -text 0 
     vTcl:DefineAlias "$top.lab55" "Label6" vTcl:WidgetProc "Toplevel1" 1
     label $top.lab56 \
         -activebackground {#f9f9f9} -activeforeground black \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -relief ridge -text 0 
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
+        -highlightbackground {#d9d9d9} -highlightcolor black -relief ridge \
+        -text 0 
     vTcl:DefineAlias "$top.lab56" "Label7" vTcl:WidgetProc "Toplevel1" 1
-    message $top.mes57 \
-        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font13,object) \
-        -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -text CHOKE -width 100 
-    vTcl:DefineAlias "$top.mes57" "Message1" vTcl:WidgetProc "Toplevel1" 1
     message $top.mes58 \
-        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font13,object) \
+        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font24,object) \
         -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -text Distribuição -width 100 
+        -highlightcolor black -text Distribuição -width 250 
     vTcl:DefineAlias "$top.mes58" "Message2" vTcl:WidgetProc "Toplevel1" 1
     message $top.mes59 \
-        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font13,object) \
+        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font24,object) \
         -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -text {Vel. Atual (Km/h)} -width 150 
+        -highlightcolor black -text {Vel. Atual(Km/h)} -width 250 
     vTcl:DefineAlias "$top.mes59" "Message3" vTcl:WidgetProc "Toplevel1" 1
     message $top.mes60 \
-        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font13,object) \
+        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font24,object) \
         -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -text {Km Rodados} -width 150 
+        -highlightcolor black -text {Km Rodados} -width 250 
     vTcl:DefineAlias "$top.mes60" "Message4" vTcl:WidgetProc "Toplevel1" 1
     message $top.mes61 \
-        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font13,object) \
+        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font24,object) \
         -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -text {Rot. Atual(RPM)} -width 150 
+        -highlightcolor black -text {Rot. Atual(RPM)} -width 250 
     vTcl:DefineAlias "$top.mes61" "Message5" vTcl:WidgetProc "Toplevel1" 1
     message $top.mes62 \
-        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font13,object) \
+        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font24,object) \
         -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -text {Tempo Ligado} -width 150 
+        -highlightcolor black -text {Tempo Ligado} -width 250 
     vTcl:DefineAlias "$top.mes62" "Message6" vTcl:WidgetProc "Toplevel1" 1
     message $top.mes63 \
-        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font13,object) \
+        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font24,object) \
         -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -text {Tempo Enduro} -width 150 
+        -highlightcolor black -text {Tempo Enduro} -width 250 
     vTcl:DefineAlias "$top.mes63" "Message7" vTcl:WidgetProc "Toplevel1" 1
     button $top.but37 \
         -activebackground {#d9d9d9} -activeforeground {#000000} \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -font $::vTcl(fonts,vTcl:font14,object) -foreground {#000000} \
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
         -highlightbackground {#d9d9d9} -highlightcolor black -pady 0 -text ON 
     vTcl:DefineAlias "$top.but37" "Button1" vTcl:WidgetProc "Toplevel1" 1
     button $top.but38 \
         -activebackground {#d9d9d9} -activeforeground {#000000} \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -font $::vTcl(fonts,vTcl:font14,object) -foreground {#000000} \
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
         -highlightbackground {#d9d9d9} -highlightcolor black -pady 0 \
         -text Pause 
     vTcl:DefineAlias "$top.but38" "Button2" vTcl:WidgetProc "Toplevel1" 1
     button $top.but39 \
         -activebackground {#d9d9d9} -activeforeground {#000000} \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -font $::vTcl(fonts,vTcl:font14,object) -foreground {#000000} \
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
         -highlightbackground {#d9d9d9} -highlightcolor black -pady 0 \
         -text BOX 
     vTcl:DefineAlias "$top.but39" "Button3" vTcl:WidgetProc "Toplevel1" 1
     button $top.but40 \
         -activebackground {#d9d9d9} -activeforeground {#000000} \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -pady 0 -text Salvar 
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
+        -highlightbackground {#d9d9d9} -highlightcolor black -pady 0 \
+        -text Salvar 
     vTcl:DefineAlias "$top.but40" "Button4" vTcl:WidgetProc "Toplevel1" 1
     button $top.but41 \
         -activebackground {#d9d9d9} -activeforeground {#000000} \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -font $::vTcl(fonts,vTcl:font14,object) -foreground {#000000} \
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
         -highlightbackground {#d9d9d9} -highlightcolor black -pady 0 \
         -text Zerar 
     vTcl:DefineAlias "$top.but41" "Button5" vTcl:WidgetProc "Toplevel1" 1
     button $top.but42 \
         -activebackground {#d9d9d9} -activeforeground {#000000} \
         -background {#d9d9d9} -disabledforeground {#a3a3a3} \
-        -font $::vTcl(fonts,vTcl:font14,object) -foreground {#000000} \
+        -font $::vTcl(fonts,vTcl:font21,object) -foreground {#000000} \
         -highlightbackground {#d9d9d9} -highlightcolor black -pady 0 \
         -text Tempo 
     vTcl:DefineAlias "$top.but42" "Button6" vTcl:WidgetProc "Toplevel1" 1
     message $top.mes43 \
-        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font12,object) \
+        -background {#d9d9d9} -font $::vTcl(fonts,vTcl:font20,object) \
         -foreground {#000000} -highlightbackground {#d9d9d9} \
-        -highlightcolor black -text {Telemetria EESC USP BAJA} -width 250 
+        -highlightcolor black -text {Telemetria EESC USP BAJA} -width 500 
     vTcl:DefineAlias "$top.mes43" "Message8" vTcl:WidgetProc "Toplevel1" 1
     ###################
     # SETTING GEOMETRY
     ###################
     place $top.can44 \
-        -in $top -x 0 -relx 0.022 -y 0 -rely 0.113 -width 0 -relwidth 0.271 \
-        -height 0 -relheight 0.39 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.022 -y 0 -rely 0.11 -width 0 -relwidth 0.314 \
+        -height 0 -relheight 0.461 -anchor nw -bordermode ignore 
     place $top.can45 \
-        -in $top -x 0 -relx 0.3 -y 0 -rely 0.028 -width 0 -relwidth 0.398 \
-        -height 0 -relheight 0.532 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.343 -y 0 -rely 0.11 -width 0 -relwidth 0.314 \
+        -height 0 -relheight 0.461 -anchor nw -bordermode ignore 
     place $top.can46 \
-        -in $top -x 0 -relx 0.707 -y 0 -rely 0.113 -width 0 -relwidth 0.271 \
-        -height 0 -relheight 0.39 -anchor nw -bordermode ignore 
-    place $top.lab50 \
-        -in $top -x 0 -relx 0.022 -y 0 -rely 0.652 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.664 -y 0 -rely 0.11 -width 0 -relwidth 0.314 \
+        -height 0 -relheight 0.461 -anchor nw -bordermode ignore 
     place $top.lab51 \
-        -in $top -x 0 -relx 0.16 -y 0 -rely 0.652 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.03 -y 0 -rely 0.68 -relwidth 0.14 \
+        -relheight 0.08 -anchor nw -bordermode ignore 
     place $top.lab52 \
-        -in $top -x 0 -relx 0.315 -y 0 -rely 0.652 -width 0 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.19 -y 0 -rely 0.68 -width 0 -relwidth 0.14 \
+        -relheight 0.08 -anchor nw -bordermode ignore 
     place $top.lab53 \
-        -in $top -x 0 -relx 0.44 -y 0 -rely 0.652 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.35 -y 0 -rely 0.68 -relwidth 0.14 \
+        -relheight 0.08 -anchor nw -bordermode ignore 
     place $top.lab54 \
-        -in $top -x 0 -relx 0.565 -y 0 -rely 0.652 -width 0 -relwidth 0.12 \
-        -height 0 -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.51 -y 0 -rely 0.68 -width 0 -relwidth 0.14 \
+        -height 0 -relheight 0.08 -anchor nw -bordermode ignore 
     place $top.lab55 \
-        -in $top -x 0 -relx 0.72 -y 0 -rely 0.652 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.67 -y 0 -rely 0.68 -relwidth 0.14 \
+        -relheight 0.08 -anchor nw -bordermode ignore 
     place $top.lab56 \
-        -in $top -x 0 -relx 0.858 -y 0 -rely 0.652 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
-    place $top.mes57 \
-        -in $top -x 0 -relx 0.022 -y 0 -rely 0.595 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.83 -y 0 -rely 0.68 -relwidth 0.14 \
+        -relheight 0.08 -anchor nw -bordermode ignore 
     place $top.mes58 \
-        -in $top -x 0 -relx 0.16 -y 0 -rely 0.595 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.03 -y 0 -rely 0.6 -relwidth 0.14 \
+        -relheight 0.07 -anchor nw -bordermode ignore 
     place $top.mes59 \
-        -in $top -x 0 -relx 0.315 -y 0 -rely 0.595 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.19 -y 0 -rely 0.6 -relwidth 0.14 \
+        -relheight 0.07 -anchor nw -bordermode ignore 
     place $top.mes60 \
-        -in $top -x 0 -relx 0.44 -y 0 -rely 0.595 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.35 -y 0 -rely 0.6 -relwidth 0.14 \
+        -relheight 0.07 -anchor nw -bordermode ignore 
     place $top.mes61 \
-        -in $top -x 0 -relx 0.565 -y 0 -rely 0.595 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.51 -y 0 -rely 0.6 -relwidth 0.14 \
+        -relheight 0.07 -anchor nw -bordermode ignore 
     place $top.mes62 \
-        -in $top -x 0 -relx 0.72 -y 0 -rely 0.595 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.67 -y 0 -rely 0.6 -relwidth 0.14 \
+        -relheight 0.07 -anchor nw -bordermode ignore 
     place $top.mes63 \
-        -in $top -x 0 -relx 0.858 -y 0 -rely 0.595 -relwidth 0.12 \
-        -relheight 0.057 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.83 -y 0 -rely 0.6 -relwidth 0.14 \
+        -relheight 0.07 -anchor nw -bordermode ignore 
     place $top.but37 \
-        -in $top -x 0 -relx 0.03 -y 0 -rely 0.851 -relwidth 0.08 \
-        -relheight 0.07 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.03 -y 0 -rely 0.83 -relwidth 0.1 -relheight 0.1 \
+        -anchor nw -bordermode ignore 
     place $top.but38 \
-        -in $top -x 0 -relx 0.202 -y 0 -rely 0.851 -relwidth 0.08 \
-        -relheight 0.07 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.198 -y 0 -rely 0.83 -relwidth 0.1 \
+        -relheight 0.1 -anchor nw -bordermode ignore 
     place $top.but39 \
-        -in $top -x 0 -relx 0.374 -y 0 -rely 0.851 -width 0 -relwidth 0.08 \
-        -height 0 -relheight 0.07 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.366 -y 0 -rely 0.83 -width 0 -relwidth 0.1 \
+        -height 0 -relheight 0.1 -anchor nw -bordermode ignore 
     place $top.but40 \
-        -in $top -x 0 -relx 0.546 -y 0 -rely 0.851 -relwidth 0.08 \
-        -relheight 0.07 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.534 -y 0 -rely 0.83 -relwidth 0.1 \
+        -relheight 0.1 -anchor nw -bordermode ignore 
     place $top.but41 \
-        -in $top -x 0 -relx 0.718 -y 0 -rely 0.851 -relwidth 0.08 \
-        -relheight 0.07 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.702 -y 0 -rely 0.83 -relwidth 0.1 \
+        -relheight 0.1 -anchor nw -bordermode ignore 
     place $top.but42 \
-        -in $top -x 0 -relx 0.89 -y 0 -rely 0.851 -relwidth 0.08 \
-        -relheight 0.07 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.87 -y 0 -rely 0.83 -relwidth 0.1 -relheight 0.1 \
+        -anchor nw -bordermode ignore 
     place $top.mes43 \
-        -in $top -x 0 -relx 0.364 -y 0 -rely 0.773 -relwidth 0.259 \
-        -relheight 0.037 -anchor nw -bordermode ignore 
+        -in $top -x 0 -relx 0.34 -y 0 -rely 0.04 -relwidth 0.32 \
+        -relheight 0.05 -anchor nw -bordermode ignore 
 
     vTcl:FireEvent $base <<Ready>>
 }
