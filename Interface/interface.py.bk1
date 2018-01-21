@@ -1,29 +1,7 @@
 
-from Tkinter import *
-import ttk
+from tkinter import *
+import tkinter.ttk as ttk
 
-import matplotlib as mpl
-import numpy as np
-import sys
-import tkinter as tk
-import matplotlib.backends.tkagg as tkagg
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-
-
-
-def draw_figure(canvas, figure, loc=(0, 0)):
-
-    figure_canvas_agg = FigureCanvasAgg(figure)
-    figure_canvas_agg.draw()
-    figure_x, figure_y, figure_w, figure_h = figure.bbox.bounds
-    figure_w, figure_h = int(figure_w), int(figure_h)
-    photo = tk.PhotoImage(master=canvas, width=figure_w, height=figure_h)
-
-    canvas.create_image(loc[0] + figure_w/2, loc[1] + figure_h/2, image=photo)
-
-    tkagg.blit(photo, figure_canvas_agg.get_renderer()._renderer, colormode=2)
-    
-    return photo
 
 
 class Telemetria_EESC_USP_BAJA:
@@ -312,51 +290,9 @@ class Telemetria_EESC_USP_BAJA:
         self.Message8.configure(text='''Telemetria EESC USP BAJA''')
         self.Message8.configure(width=500)
 
-        X = [0, 2, 4, 8]
-        Y = [0, 5, 7, 6]
-        X1 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        Y1 = [3, 5, 6, 8, 9, 7, 8, 6, 9, 10]
-        X2 = [0, 1, 2, 3, 5, 6]
-        Y2 = [0, 2, 3, 7, 5, 8]
-        ticks = [0,2,4,8]
 
-        #X = 10*np.array(range(len(data1)))
-        #Y = np.sin(X)
 
-        #X1 = np.linspace(0, 2* np.pi, 50)
-        #Y1 = np.cos(X1)
 
-        #X2 = np.linspace(0, 2* np.pi, 50)
-        #Y2 = np.arcsinh(X2)
-
-        fig = mpl.figure.Figure(figsize=(4, 3.3))
-        ax = fig.add_axes([0, 0, 1, 1])
-        ax.set_xticks(ticks)
-        ax.plot(X, Y, 'r')
-        ax.set_xlim(0, 8.1)
-        ax.set_ylim(0,8.1)
-        fig_x, fig_y = 0, 0
-        fig_photo = draw_figure(self.Canvas1, fig, loc=(fig_x, fig_y))
-    		
-
-        fig1 = mpl.figure.Figure(figsize=(4, 3.3))
-        ax1 = fig1.add_axes([0, 0, 1, 1])
-        ax1.plot(X1, Y1, 'r')
-        ax1.set_xlim(0, 9.1)
-        ax1.set_ylim(0,11.1)
-        fig_photo1 = draw_figure(self.Canvas2, fig1, loc=(fig_x, fig_y))
-    
-
-        fig2 = mpl.figure.Figure(figsize=(4, 3.3))
-        ax2 = fig2.add_axes([0, 0, 1, 1])
-        ax2.plot(X2, Y2, 'r')
-        ax2.set_xlim(0, 6.1)
-        ax2.set_ylim(0,9.1)
-        fig_x, fig_y = 0, 0
-        fig_photo2 = draw_figure(self.Canvas3, fig2, loc=(fig_x, fig_y))
-        
-
-        tk.mainloop()
 
 
 if __name__ == '__main__':
