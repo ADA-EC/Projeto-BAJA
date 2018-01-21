@@ -1,5 +1,4 @@
 from LeitorSerial import LeitorSerial
-import Interpretadores
 import pandas as pd
 
 
@@ -16,7 +15,7 @@ def salvar_excel(df):
     writer = pd.ExcelWriter('output.xlsx')
     df.to_excel(writer,'Sheet1')
     writer.save()
-    
+
 
 
 #Aqui ficará a função que será chamada para executar os códigos do projeto
@@ -25,9 +24,9 @@ def main():
     leitor = LeitorSerial()
     for i in range(5):
         leitor.Leitura()
-        
+
         #Atribui a CHOKE o ultimo Choke registrado
-        CHOKE = leitor.df.Choke[len(leitor.df)-1]
+        CHOKE = leitor.df.Choke.iloc[-1]
         if CHOKE == 1:
             print('preto')
             pass  #Tem que botar alguma coisa da interface em preto
@@ -37,14 +36,14 @@ def main():
         else:
             print('Outra bosta')
             print(CHOKE)
-        
+
         #Trecho comentado até termos integração com frontend
-        ''' 
+        '''
         #Atribui a BotaoBOX o valor do Botão BOX
         BotaoBOX = pegar na interface
-        
+
         #Atribui a BOX o ultimo Box registrado
-        BOX = leitor.df.Box[len(leitor.df)-1]
+        BOX = leitor.df.Box.iloc[-1]
         if BotaoBOX == 1:
             if BOX == 0 or BOX == 48:
                 leitor.MandaUm() #Função ainda não implementada para transmitir '1' na porta serial
@@ -58,30 +57,28 @@ def main():
                 print('preto')
                 pass  #Tem que botar alguma coisa da interface em preto
         '''
-        
+
         # Calculo de distancia percorrida
-        # Uma vez que é necessário o acesso aos dois últimos registros, 
+        # Uma vez que é necessário o acesso aos dois últimos registros,
         # é preciso impedir que esse cálculo seja feito na primeira iteração
         if i==0:
             KmRodadosTotal = 0
         else:
-            #Calcula o index da ultima leitura (se garantirmos um i será substituído)
-            IndexAtual = len(leitor.df)-1
             #Retorna a velocidade média em m/s
-            VelMediaMPS = ((leitor.df.Velocidade[IndexAtual] + leitor.df.Velocidade[IndexAtual - 1])/2)/3.6
+            VelMediaMPS = ((leitor.df.Velocidade.iloc[-1] + leitor.df.Velocidade.iloc[-2])/2)/3.6
             #Retorna os Km Rodados nesta iteração
-            KmRodadosAtual = VelMediaMPS * (leitor.df.Tempo[IndexAtual] - leitor.df.Tempo[IndexAtual-1])/1000
+            KmRodadosAtual = VelMediaMPS * (leitor.df.Tempo.iloc[-1] - leitor.df.Tempo.iloc[-2])/1000
             #Soma os Km Rodados nesta iteração ao total
             KmRodadosTotal += KmRodadosAtual
-        
-        
+
+
         '''
         Aqui deve ficar as partes da interface
         '''
-    
-    
+
+
     print(leitor.df)
-    
+
 
 #Chama a função main se o script for executado como main e não faz nada se for chamado por outro script
 if __name__ == "__main__":
