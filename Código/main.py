@@ -1,20 +1,7 @@
 from LeitorSerial import LeitorSerial
 import pandas as pd
+import numpy as np
 
-
-def salvar_excel(df):
-    # Salvar
-    #global VELOCIDADE
-    #global ROTACAO
-    #global tempo
-    #global DISTRIBUICAO
-    #global COMBUSTIVEL
-    #global Kmrodados
-    #global POSICAO
-    #global TempoM2
-    writer = pd.ExcelWriter('output.xlsx')
-    df.to_excel(writer,'Sheet1')
-    writer.save()
 
 
 
@@ -22,6 +9,9 @@ def salvar_excel(df):
 #Nela deve conter chamadas às funções de leitura, interpretação e depois exibição
 def main():
     leitor = LeitorSerial()
+    leitor.df['KmRodadosAtual'] = np.nan
+    leitor.df['KmRodadosTotal'] = np.nan
+    KmRodadosTotal = 0
     for i in range(5):
         leitor.Leitura()
 
@@ -62,14 +52,17 @@ def main():
         # Uma vez que é necessário o acesso aos dois últimos registros,
         # é preciso impedir que esse cálculo seja feito na primeira iteração
         if i==0:
-            KmRodadosTotal = 0
+            leitor.df.KmRodadosTotal.iloc[-1] = 0
         else:
             #Retorna a velocidade média em m/s
             VelMediaMPS = ((leitor.df.Velocidade.iloc[-1] + leitor.df.Velocidade.iloc[-2])/2)/3.6
             #Retorna os Km Rodados nesta iteração
             KmRodadosAtual = VelMediaMPS * (leitor.df.Tempo.iloc[-1] - leitor.df.Tempo.iloc[-2])/1000
+            leitor.df.KmRodadosAtual.iloc[-1] = KmRodadosAtual
             #Soma os Km Rodados nesta iteração ao total
             KmRodadosTotal += KmRodadosAtual
+            leitor.df.KmRodadosTotal.iloc[-1] = KmRodadosTotal
+
 
 
         '''
@@ -78,6 +71,7 @@ def main():
 
 
     print(leitor.df)
+    leitor.salvar_excel('output.xlsx')
 
 
 #Chama a função main se o script for executado como main e não faz nada se for chamado por outro script
