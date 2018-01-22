@@ -2,13 +2,14 @@ from LeitorSerial import LeitorSerial
 import pandas as pd
 import numpy as np
 
-
+# Porta de saida
+PORT='/dev/pts/1'
 
 
 #Aqui ficará a função que será chamada para executar os códigos do projeto
 #Nela deve conter chamadas às funções de leitura, interpretação e depois exibição
 def main():
-    leitor = LeitorSerial()
+    leitor = LeitorSerial(PORT=PORT)
     leitor.df['KmRodadosAtual'] = np.nan
     leitor.df['KmRodadosTotal'] = np.nan
     KmRodadosTotal = 0
@@ -24,7 +25,7 @@ def main():
             print('vermelho')
             pass  #Tem que botar alguma coisa da interface em vermelho
         else:
-            print('Outra bosta')
+            print('Other')
             print(CHOKE)
 
         #Trecho comentado até termos integração com frontend

@@ -22,19 +22,19 @@ class LeitorSerial():
 	def __init__(self, PORT='COM6', BaudRate = 9600):
 
 		# atribui a tstart o tempo do sistema na criação do LeitorSerial
-		tstart = datetime.now()
+		self.tstart = datetime.now()
 
-		"""
+
 		# configura a conexão serial
 		# detalhes em "https://pythonhosted.org/pyserial/pyserial_api.html"
-		ser = serial.Serial(
+		self.ser = serial.Serial(
 			port=PORT,
 			baudrate=BaudRate,
 			parity=serial.PARITY_NONE,
 			stopbits=serial.STOPBITS_ONE,
 			bytesize=serial.EIGHTBITS
 		)
-		"""
+
 
 		print ('Iniciou Leitor Serial')
 
@@ -43,11 +43,11 @@ class LeitorSerial():
 
 	#Aqui deve ser retornado o dicionário com as leitura feitas
 	def Leitura(self):
-		readings = [np.float(x) for x in self.LeituraAleatoria().split(';')[:-1]]
+		line = str(self.ser.readline(),'utf-8')
+		readings = [np.float(x) for x in line.split(';')[:-1]]
 		time = (datetime.now()-self.tstart).total_seconds()
 		readings.insert(0, time)
 		self.df = self.df.append(dict(zip(self.col_labels, readings)), ignore_index=True)
-		sleep(0.1)
 
 
 	def LeituraAleatoria(self):
