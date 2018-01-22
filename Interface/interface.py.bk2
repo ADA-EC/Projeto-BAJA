@@ -1,24 +1,29 @@
 
-from tkinter import *
-import tkinter.ttk as ttk
+from Tkinter import *
+import ttk
 
 import matplotlib as mpl
 import numpy as np
 import sys
 import tkinter as tk
 import matplotlib.backends.tkagg as tkagg
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.backend_bases import key_press_handler
-
-import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 
-def draw_figure(canvas, figure):
 
-    canvas = FigureCanvasTkAgg(figure, master=canvas)
-    canvas.show()
-    canvas.get_tk_widget().pack(anchor = tk.NW, side=tk.TOP, fill=tk.BOTH, expand=1)
+def draw_figure(canvas, figure, loc=(0, 0)):
+
+    figure_canvas_agg = FigureCanvasAgg(figure)
+    figure_canvas_agg.draw()
+    figure_x, figure_y, figure_w, figure_h = figure.bbox.bounds
+    figure_w, figure_h = int(figure_w), int(figure_h)
+    photo = tk.PhotoImage(master=canvas, width=figure_w, height=figure_h)
+
+    canvas.create_image(loc[0] + figure_w/2, loc[1] + figure_h/2, image=photo)
+
+    tkagg.blit(photo, figure_canvas_agg.get_renderer()._renderer, colormode=2)
     
+    return photo
 
 
 class Telemetria_EESC_USP_BAJA:
@@ -34,7 +39,7 @@ class Telemetria_EESC_USP_BAJA:
             "roman -underline 0 -overstrike 0"
         font21 = "-family {Segoe UI} -size 17 -weight normal -slant "  \
             "roman -underline 0 -overstrike 0"
-        font24 = "-family {Segoe UI} -size 18 -weight normal -slant "  \
+        font24 = "-family {Segoe UI} -size 19 -weight normal -slant "  \
             "roman -underline 0 -overstrike 0"
 
         top.geometry("1366x705+112+149")
@@ -166,11 +171,11 @@ class Telemetria_EESC_USP_BAJA:
         self.Message2.configure(foreground="#000000")
         self.Message2.configure(highlightbackground="#d9d9d9")
         self.Message2.configure(highlightcolor="black")
-        self.Message2.configure(text='''Distribuição''')
+        self.Message2.configure(text='''Distribuicao''')
         self.Message2.configure(width=250)
 
         self.Message3 = Message(top)
-        self.Message3.place(relx=0.18, rely=0.6, relheight=0.07, relwidth=0.16)
+        self.Message3.place(relx=0.19, rely=0.6, relheight=0.07, relwidth=0.14)
         self.Message3.configure(background="#d9d9d9")
         self.Message3.configure(font=font24)
         self.Message3.configure(foreground="#000000")
@@ -190,7 +195,7 @@ class Telemetria_EESC_USP_BAJA:
         self.Message4.configure(width=250)
 
         self.Message5 = Message(top)
-        self.Message5.place(relx=0.50, rely=0.6, relheight=0.07, relwidth=0.16)
+        self.Message5.place(relx=0.51, rely=0.6, relheight=0.07, relwidth=0.14)
         self.Message5.configure(background="#d9d9d9")
         self.Message5.configure(font=font24)
         self.Message5.configure(foreground="#000000")
@@ -298,7 +303,7 @@ class Telemetria_EESC_USP_BAJA:
         self.Button6.configure(text='''Tempo''')
 
         self.Message8 = Message(top)
-        self.Message8.place(relx=0.30, rely=0.04, relheight=0.05, relwidth=0.40)
+        self.Message8.place(relx=0.34, rely=0.04, relheight=0.05, relwidth=0.32)
         self.Message8.configure(background="#d9d9d9")
         self.Message8.configure(font=font20)
         self.Message8.configure(foreground="#000000")
@@ -324,22 +329,31 @@ class Telemetria_EESC_USP_BAJA:
         #X2 = np.linspace(0, 2* np.pi, 50)
         #Y2 = np.arcsinh(X2)
 
-        fig = mpl.figure.Figure()
-        ax = fig.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
+        fig = mpl.figure.Figure(figsize=(4, 3.3))
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.set_xticks(ticks)
         ax.plot(X, Y, 'r')
-        draw_figure(self.Canvas1, fig)
+        ax.set_xlim(0, 8.1)
+        ax.set_ylim(0,8.1)
+        fig_x, fig_y = 0, 0
+        fig_photo = draw_figure(self.Canvas1, fig, loc=(fig_x, fig_y))
     		
 
-        fig1 = mpl.figure.Figure()
-        ax1 = fig1.add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
+        fig1 = mpl.figure.Figure(figsize=(4, 3.3))
+        ax1 = fig1.add_axes([0, 0, 1, 1])
         ax1.plot(X1, Y1, 'r')
-        draw_figure(self.Canvas2, fig1)
+        ax1.set_xlim(0, 9.1)
+        ax1.set_ylim(0,11.1)
+        fig_photo1 = draw_figure(self.Canvas2, fig1, loc=(fig_x, fig_y))
     
 
-        fig2 = mpl.figure.Figure()
-        ax2 = fig2.add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
+        fig2 = mpl.figure.Figure(figsize=(4, 3.3))
+        ax2 = fig2.add_axes([0, 0, 1, 1])
         ax2.plot(X2, Y2, 'r')
-        draw_figure(self.Canvas3, fig2)
+        ax2.set_xlim(0, 6.1)
+        ax2.set_ylim(0,9.1)
+        fig_x, fig_y = 0, 0
+        fig_photo2 = draw_figure(self.Canvas3, fig2, loc=(fig_x, fig_y))
         
 
         tk.mainloop()

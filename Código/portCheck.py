@@ -1,4 +1,6 @@
+import serial
 import serial.tools.list_ports
+import glob
 import sys
 
 list = serial.tools.list_ports.comports()
