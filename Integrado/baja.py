@@ -25,11 +25,21 @@ except ImportError:
 # Se PORT for None, faz leituras aleatorias.
 PORT = None
 
-class LeitorSerial():
-    tstart = datetime.now()
+### Implements Singleton Design Pattern
+class SingletonDecorator:
+    """http://python-3-patterns-idioms-test.readthedocs.io/en/latest/Singleton.html"""
+    def __init__(self,klass):
+        self.klass = klass
+        self.instance = None
+    def __call__(self,*args,**kwds):
+        if self.instance == None:
+            self.instance = self.klass(*args,**kwds)
+        return self.instance
 
-	# cria o DataFrame com as colunas que serão preenchidas
-    col_labels = ('Tempo',
+class Interpretador():
+    """This class is a Singleton"""
+    # Nome de cada campo que é recebido pelo receptor serial + tempo
+    labels = ('Tempo',
         'Box',
         'Velocidade',
         'Rotacao',
@@ -37,13 +47,54 @@ class LeitorSerial():
         'Combustivel',
         'Posicao',
         'Choke')
-    df = pd.DataFrame(columns=col_labels)
 
-    def __init__(self, port='COM6', BaudRate = 9600):
-		# atribui a tstart o tempo do sistema na criação do LeitorSerial
+    def __init__(self):
+        # cria o DataFrame com as colunas que serão preenchidas
+        self.df = pd.DataFrame(columns=self.labels)
+        self.df['KmRodadosAtual'] = np.nan
+        self.df['KmRodadosTotal'] = np.nan
+        self._KmRodadosTotal = 0
+
+    def last(self, label):
+        if self.df.index.shape[0] > 0:
+            return self.df[label].iloc[-1]
+
+    def append(self, readings):
+        # Append readings to Dataframe
+        self.df = self.df.append(dict(zip(self.labels, readings)), ignore_index=True)
+
+        # Calculo de distancia percorrida
+        # Uma vez que é necessário o acesso aos dois últimos registros,
+        # O 'if' impede que esse cálculo seja feito na primeira iteração
+        if self.df.index.shape[0] > 1:
+            #Determina a velocidade média em m/s
+            VelMediaMPS = ((self.df.Velocidade.iloc[-1] + self.df.Velocidade.iloc[-2])/2)/3.6
+            #Determina os Km Rodados nesta iteração
+            KmRodadosAtual = VelMediaMPS * (self.df.Tempo.iloc[-1] - self.df.Tempo.iloc[-2])/1000
+            self.df.KmRodadosAtual.iloc[-1] = KmRodadosAtual
+            #Soma os Km Rodados nesta iteração ao total
+            self._KmRodadosTotal += KmRodadosAtual
+            self.df.KmRodadosTotal.iloc[-1] = self._KmRodadosTotal
+        else:
+            self.df.KmRodadosTotal.iloc[-1] = 0
+
+
+    def saveExcel(self, filename='output.xlsx'):
+        writer = pd.ExcelWriter(filename)
+        df_exc = self.df[['Tempo','Velocidade', 'Rotacao', 'Distribuicao', 'Combustivel', 'KmRodadosTotal', 'Posicao']]
+        df_exc.to_excel(writer,'Sheet1')
+        writer.close()
+        print(self.df)
+
+
+# This indeed makes the classa a Singleton
+Interpretador = SingletonDecorator(Interpretador)
+
+class LeitorSerial():
+    def __init__(self, port=None, BaudRate = 9600):
+        # atribui a tstart o tempo do sistema na criação do objeto
         self.tstart = datetime.now()
-
-        if PORT is not None:
+        if port is not None:
             # configura a conexão serial
             # detalhes em "https://pythonhosted.org/pyserial/pyserial_api.html"
             self.ser = serial.Serial(
@@ -61,8 +112,7 @@ class LeitorSerial():
         readings = [np.float(x) for x in line.split(';')[:-1]]
         time = (datetime.now()-self.tstart).total_seconds()
         readings.insert(0, time)
-        self.df = self.df.append(dict(zip(self.col_labels, readings)), ignore_index=True)
-
+        return readings
 
     def LeituraAleatoria(self):
         l = [str(x) for x in np.random.randint(0, 100, size=7)]
@@ -71,15 +121,7 @@ class LeitorSerial():
         readings = [np.float(x) for x in line.split(';')[:-1]]
         time = (datetime.now()-self.tstart).total_seconds()
         readings.insert(0, time)
-        self.df = self.df.append(dict(zip(self.col_labels, readings)), ignore_index=True)
-
-    def SalvarExcel(self, filename='output.xlsx'):
-        writer = pd.ExcelWriter(filename)
-        df_exc = self.df[['Tempo','Velocidade', 'Rotacao', 'Distribuicao', 'Combustivel', 'KmRodadosTotal', 'Posicao']]
-        df_exc.to_excel(writer,'Sheet1')
-        writer.close()
-        print(self.df)
-
+        return readings
 
 class Frontend:
     def __init__(self, top=None):
@@ -292,7 +334,7 @@ class Frontend:
         self.Button1.configure(highlightcolor="black")
         self.Button1.configure(pady="0")
         self.Button1.configure(text='''ON''')
-        self.Button1.configure(command=self.callback_button_on)
+        self.Button1.configure(command=self.callback_button_on) # <<<  Foi assim que setei qual a funcao que o botao executa <<<
 
         self.Button2 = Button(top)
         self.Button2.place(relx=0.2, rely=0.83, height=71, width=137)
@@ -374,6 +416,8 @@ class Frontend:
         self.Message8.configure(text='''Telemetria EESC USP BAJA''')
         self.Message8.configure(width=500)
 
+        self.pause = True
+
         X = [0, 2, 4, 8]
         Y = [0, 5, 7, 6]
         X1 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -417,10 +461,13 @@ class Frontend:
 
     def callback_button_on(self):
         print("ON")
+        self.pause = False
+        root.after(500, self.update_choke)
         thread_backend.Resume()
 
     def callback_button_pause(self):
         print("PAUSE")
+        self.pause = True
         thread_backend.Pause()
 
     def callback_button_tempo(self):
@@ -432,27 +479,61 @@ class Frontend:
     def callback_button_salvar(self):
         # Seria legal dar a opcao de escolher o nome do arquivo antes de salvar
         print("SALVAR")
-        thread_backend.leitor.SalvarExcel('output.xlsx')
+        interp = Interpretador() # Singleton
+        # Precisa de pausar pq o backend fica escrevendo no objeto
+        # que o interpretador quer salvar em disco. Nao tem problema de
+        # concorrencia, mas o SO fica maluco e nao salva direito, ou demora
+        # pra salvar. Pausando, ele salva rapido.
+        thread_backend.Pause()
+        interp.saveExcel('baja.xlsx') #'+str(datetime.now())+
+        thread_backend.Resume()
+
+    def update_choke(self):
+        interp = Interpretador() # Singleton
+        #Atribui a CHOKE o ultimo Choke registrado
+        CHOKE = interp.last('Choke')
+        if CHOKE is None:
+            # Nothing to be done, must wait at least one reading
+            pass
+        elif CHOKE == 1:
+            print('preto')
+            pass  #Tem que botar alguma coisa da interface em preto
+        elif CHOKE ==0:
+            print('vermelho')
+            pass  #Tem que botar alguma coisa da interface em vermelho
+        else:
+            print('Other')
+            print(CHOKE)
+        # Isso faz com que a funcao seja chamada a cada 500ms pelo root.mainloop()
+        if self.pause == False:
+            root.after(500, self.update_choke)
 
 
-
-def draw_figure(canvas, figure):
-    canvas = FigureCanvasTkAgg(figure, master=canvas)
-    canvas.show()
-    canvas.get_tk_widget().pack(anchor = tk.NW, side=tk.TOP, fill=tk.BOTH, expand=1)
-
-def on_close():
-    print("[Closing]")
-    thread_backend.Stop()
-    root.destroy()
-    sys.exit()
+    def update_box(self):
+        ##### Esta comentado pq falta pegar valores corretamente #####
+        # #Atribui a BOX o ultimo Box registrado
+        # val_botao_box = None # Pegar da inferface
+        # BOX = # pegar do Interpretador
+        # if val_botao_box == 1:
+        #     if BOX == 0 or BOX == 48:
+        #         leitor.MandaUm() #Função ainda não implementada para transmitir '1' na porta serial
+        #     elif BOX == 49:
+        #         print('vermelho')
+        #         pass  #Tem que botar alguma coisa da interface em vermelho
+        # elif val_botao_box == 0:
+        #     if BOX == 49:
+        #         leitor.MandaZero() #Função ainda não implementada para transmitir '0' na porta serial
+        #     elif BOX == 48:
+        #         print('preto')
+        #         pass  #Tem que botar alguma coisa da interface em preto
+        pass
 
 class Backend(threading.Thread):
     def __init__(self):
       threading.Thread.__init__(self)
-      self.leitor = LeitorSerial()
       self.pause = True
       self.stop = False
+      self.leitor = LeitorSerial()
 
     def Stop(self):
         self.stop = True
@@ -464,70 +545,28 @@ class Backend(threading.Thread):
         self.pause = False
 
     def run(self):
-        self.leitor.df['KmRodadosAtual'] = np.nan
-        self.leitor.df['KmRodadosTotal'] = np.nan
-        KmRodadosTotal = 0
-        firstIter = True
+        interp = Interpretador() # Singleton
         while self.stop == False:
             if self.pause == False:
-                print("foo")
+                print("[Running Backend]")
+                readings = None
                 if PORT is None:
-                    self.leitor.LeituraAleatoria()
-                    try:
-                        sleep(1)
-                    except NameError:
-                        pass
+                    readings = self.leitor.LeituraAleatoria()
+                    sleep(1)
                 else:
-                    self.leitor.Leitura()
+                    readings = self.leitor.Leitura()
+                interp.append(readings)
 
-                #Atribui a CHOKE o ultimo Choke registrado
-                CHOKE = self.leitor.df.Choke.iloc[-1]
-                if CHOKE == 1:
-                    print('preto')
-                    pass  #Tem que botar alguma coisa da interface em preto
-                elif CHOKE ==0:
-                    print('vermelho')
-                    pass  #Tem que botar alguma coisa da interface em vermelho
-                else:
-                    print('Other')
-                    print(CHOKE)
+def draw_figure(canvas, figure):
+    canvas = FigureCanvasTkAgg(figure, master=canvas)
+    canvas.show()
+    canvas.get_tk_widget().pack(anchor = tk.NW, side=tk.TOP, fill=tk.BOTH, expand=1)
 
-                #Trecho comentado até termos integração com frontend
-                '''
-                #Atribui a BotaoBOX o valor do Botão BOX
-                BotaoBOX = pegar na interface
-
-                #Atribui a BOX o ultimo Box registrado
-                BOX = leitor.df.Box.iloc[-1]
-                if BotaoBOX == 1:
-                    if BOX == 0 or BOX == 48:
-                        leitor.MandaUm() #Função ainda não implementada para transmitir '1' na porta serial
-                    elif BOX == 49:
-                        print('vermelho')
-                        pass  #Tem que botar alguma coisa da interface em vermelho
-                elif BotaoBOX == 0:
-                    if BOX == 49:
-                        leitor.MandaZero() #Função ainda não implementada para transmitir '0' na porta serial
-                    elif BOX == 48:
-                        print('preto')
-                        pass  #Tem que botar alguma coisa da interface em preto
-                '''
-
-                # Calculo de distancia percorrida
-                # Uma vez que é necessário o acesso aos dois últimos registros,
-                # é preciso impedir que esse cálculo seja feito na primeira iteração
-                if firstIter == True:
-                    self.leitor.df.KmRodadosTotal.iloc[-1] = 0
-                    firstIter = False
-                else:
-                    #Retorna a velocidade média em m/s
-                    VelMediaMPS = ((self.leitor.df.Velocidade.iloc[-1] + self.leitor.df.Velocidade.iloc[-2])/2)/3.6
-                    #Retorna os Km Rodados nesta iteração
-                    KmRodadosAtual = VelMediaMPS * (self.leitor.df.Tempo.iloc[-1] - self.leitor.df.Tempo.iloc[-2])/1000
-                    self.leitor.df.KmRodadosAtual.iloc[-1] = KmRodadosAtual
-                    #Soma os Km Rodados nesta iteração ao total
-                    KmRodadosTotal += KmRodadosAtual
-                    self.leitor.df.KmRodadosTotal.iloc[-1] = KmRodadosTotal
+def on_close():
+    print("[Closing]")
+    thread_backend.Stop()
+    root.destroy()
+    sys.exit()
 
 def main():
     # Cria thread do backend
@@ -542,7 +581,6 @@ def main():
     # Cria interface (frontend)
     global root
     root = Tk()
-    #root.protocol("WM_DELETE_WINDOW", on_close)
     top = Frontend(root)
     root.mainloop()
 
