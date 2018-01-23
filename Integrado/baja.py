@@ -122,6 +122,37 @@ class LeitorSerial():
         readings.insert(0, time)
         return readings
 
+class Backend(threading.Thread):
+    def __init__(self):
+      threading.Thread.__init__(self)
+      self.pause = True
+      self.stop = False
+      self.leitor = LeitorSerial(port=PORT)
+
+    def Stop(self):
+        self.stop = True
+
+    def Pause(self):
+        self.pause = True
+
+    def Resume(self):
+        self.pause = False
+
+    def run(self):
+        interp = Interpretador() # Singleton
+        while self.stop == False:
+            if self.pause == False:
+                print("[Running Backend]")
+                readings = None
+                if PORT is None:
+                    readings = self.leitor.LeituraAleatoria()
+                    sleep(1)
+                else:
+                    readings = self.leitor.Leitura()
+                interp.append(readings)
+                print(interp.df.tail())
+
+
 class Frontend:
     def __init__(self, top=None):
         '''This class configures and populates the toplevel window.
@@ -435,7 +466,7 @@ class Frontend:
         #Y2 = np.arcsinh(X2)
 
         fig = plt.Figure()
-        ax = fig.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo', aspect = 'equal')
+        ax = fig.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
         fig.set_tight_layout(True)
         ax.plot(X, Y, 'r')
         draw_figure(self.Canvas1, fig)
@@ -527,36 +558,6 @@ class Frontend:
         #         print('preto')
         #         pass  #Tem que botar alguma coisa da interface em preto
         pass
-
-class Backend(threading.Thread):
-    def __init__(self):
-      threading.Thread.__init__(self)
-      self.pause = True
-      self.stop = False
-      self.leitor = LeitorSerial(port=PORT)
-
-    def Stop(self):
-        self.stop = True
-
-    def Pause(self):
-        self.pause = True
-
-    def Resume(self):
-        self.pause = False
-
-    def run(self):
-        interp = Interpretador() # Singleton
-        while self.stop == False:
-            if self.pause == False:
-                print("[Running Backend]")
-                readings = None
-                if PORT is None:
-                    readings = self.leitor.LeituraAleatoria()
-                    sleep(1)
-                else:
-                    readings = self.leitor.Leitura()
-                interp.append(readings)
-                print(interp.df.tail())
 
 def draw_figure(canvas, figure):
     canvas = FigureCanvasTkAgg(figure, master=canvas)
