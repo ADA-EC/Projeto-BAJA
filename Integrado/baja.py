@@ -97,13 +97,13 @@ class LeitorSerial():
         if port is not None:
             # configura a conexão serial
             # detalhes em "https://pythonhosted.org/pyserial/pyserial_api.html"
-            self.ser = serial.Serial(
+            """self.ser = serial.Serial(
                 port=port,
                 baudrate=BaudRate,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
                 bytesize=serial.EIGHTBITS
-            )
+            )"""
         print('[Leitor Serial iniciado]')
 
     def Leitura(self):
@@ -148,13 +148,16 @@ class Backend(threading.Thread):
                     readings = self.leitor.LeituraAleatoria()
                     sleep(1)
                 else:
-                    readings = self.leitor.Leitura()
+                    readings = self.leitor.LeituraAleatoria()
                 interp.append(readings)
                 print(interp.df.tail())
 
 
 class Frontend:
     def __init__(self, top=None):
+
+        
+
         '''This class configures and populates the toplevel window.
            top is the toplevel containing window.'''
         _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
@@ -464,13 +467,14 @@ class Frontend:
 
         #X2 = np.linspace(0, 2* np.pi, 50)
         #Y2 = np.arcsinh(X2)
-
+        """
         fig = plt.Figure()
         ax = fig.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
         fig.set_tight_layout(True)
         ax.plot(X, Y, 'r')
         draw_figure(self.Canvas1, fig)
-
+        """
+        #self.draw_graph1()
 
         fig1 = plt.Figure()
         ax1 = fig1.add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
@@ -484,6 +488,28 @@ class Frontend:
         fig2.set_tight_layout(True)
         ax2.plot(X2, Y2, 'r')
         draw_figure(self.Canvas3, fig2)
+
+    def draw_graph1(self):
+        interp = Interpretador()
+
+        
+        X1 = interp.df.Tempo.as_matrix()
+        X2 = X1.tolist()
+        X = X2[-15:]
+
+
+        Y1 = interp.df.Distribuicao.as_matrix()
+        Y2 = Y1.tolist()
+        Y = Y2[-15:]
+
+        print(X,Y)
+
+        fig = plt.Figure()
+        ax = fig.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
+        fig.set_tight_layout(True)
+        ax.plot(X, Y, 'r')
+        draw_figure(self.Canvas1, fig)
+
 
     # em callback nao pode ter loop demorado (e jamais "while True")
     def callback_button_box(self):
@@ -501,6 +527,7 @@ class Frontend:
         thread_backend.Pause()
 
     def callback_button_tempo(self):
+        self.draw_graph1()
         pass
 
     def callback_button_zerar(self):
@@ -558,6 +585,8 @@ class Frontend:
         #         print('preto')
         #         pass  #Tem que botar alguma coisa da interface em preto
         pass
+
+
 
 def draw_figure(canvas, figure):
     canvas = FigureCanvasTkAgg(figure, master=canvas)
