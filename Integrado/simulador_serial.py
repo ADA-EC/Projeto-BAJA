@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 # Porta de entrada
-PORT = '/dev/pts/3'
+PORT = '/dev/pts/4'
 
 def LeituraAleatoria():
     l = [str(x) for x in np.random.randint(0, 100, size=7)]

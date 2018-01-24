@@ -23,7 +23,7 @@ except ImportError:
 
 # Endereco do PORT de entrada. i.e. /dev/ttyCOM6
 # Se PORT for None, faz leituras aleatorias.
-PORT = None
+PORT = '/dev/pts/5'#None
 
 ### Implements Singleton Design Pattern
 class SingletonDecorator:
@@ -98,13 +98,12 @@ class LeitorSerial():
             # configura a conexão serial
             # detalhes em "https://pythonhosted.org/pyserial/pyserial_api.html"
             self.ser = serial.Serial(
-            port=port,
-            baudrate=BaudRate,
-            parity=serial.PARITY_NONE,
-            stopbits=serial.STOPBITS_ONE,
-            bytesize=serial.EIGHTBITS)
-            # abre a conexão serial
-            ser.open()
+                port=port,
+                baudrate=BaudRate,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE,
+                bytesize=serial.EIGHTBITS
+            )
         print('[Leitor Serial iniciado]')
 
     def Leitura(self):
@@ -496,14 +495,15 @@ class Frontend:
             # Nothing to be done, must wait at least one reading
             pass
         elif CHOKE == 1:
-            print('preto')
+            #print('preto')
             pass  #Tem que botar alguma coisa da interface em preto
         elif CHOKE ==0:
-            print('vermelho')
+            #print('vermelho')
             pass  #Tem que botar alguma coisa da interface em vermelho
         else:
-            print('Other')
-            print(CHOKE)
+            #print('Other')
+            #print(CHOKE)
+            pass
         # Isso faz com que a funcao seja chamada a cada 500ms pelo root.mainloop()
         if self.pause == False:
             root.after(500, self.update_choke)
@@ -533,7 +533,7 @@ class Backend(threading.Thread):
       threading.Thread.__init__(self)
       self.pause = True
       self.stop = False
-      self.leitor = LeitorSerial()
+      self.leitor = LeitorSerial(port=PORT)
 
     def Stop(self):
         self.stop = True
@@ -556,6 +556,7 @@ class Backend(threading.Thread):
                 else:
                     readings = self.leitor.Leitura()
                 interp.append(readings)
+                print(interp.df.tail())
 
 def draw_figure(canvas, figure):
     canvas = FigureCanvasTkAgg(figure, master=canvas)
