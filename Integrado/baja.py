@@ -8,8 +8,12 @@ from time import sleep
 
 import matplotlib.backends.tkagg as tkagg
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib
+matplotlib.use("TkAgg")
 from matplotlib.backend_bases import key_press_handler
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib import style
 
 from tkinter import *
 import tkinter.ttk as ttk
@@ -19,6 +23,16 @@ try:
     import threading
 except ImportError:
     import dummy_threading as threading
+
+
+style.use("ggplot")
+
+fig = plt.Figure()
+ax = fig.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
+fig1 = plt.Figure()
+ax1 = fig1.add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
+fig2 = plt.Figure()
+ax2 = fig2.add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
 
 
 # Endereco do PORT de entrada. i.e. /dev/ttyCOM6
@@ -153,8 +167,13 @@ class Backend(threading.Thread):
                 print(interp.df.tail())
 
 
-class Frontend:
-    def __init__(self, top=None):
+class Frontend(tk.Tk):
+    def __init__(self, *args, **kwargs):
+
+        top = self
+
+        tk.Tk.__init__(self, *args, **kwargs)
+
         '''This class configures and populates the toplevel window.
            top is the toplevel containing window.'''
         _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
@@ -169,7 +188,9 @@ class Frontend:
         font24 = "-family {Segoe UI} -size 18 -weight normal -slant "  \
             "roman -underline 0 -overstrike 0"
 
-        top.geometry("1366x705+112+149")
+        
+        top.geometry("1366x705+0+0")
+
         top.title("Telemetria EESC USP BAJA")
         top.configure(background="#d9d9d9")
         top.configure(highlightbackground="#d9d9d9")
@@ -177,6 +198,7 @@ class Frontend:
 
         # make sure widget instances are deleted
         top.protocol("WM_DELETE_WINDOW", on_close)
+        
 
         self.Canvas1 = Canvas(top)
         self.Canvas1.place(relx=0.02, rely=0.11, relheight=0.46, relwidth=0.31)
@@ -465,25 +487,25 @@ class Frontend:
         #X2 = np.linspace(0, 2* np.pi, 50)
         #Y2 = np.arcsinh(X2)
 
-        fig = plt.Figure()
-        ax = fig.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
+        #fig = plt.Figure()
+        #ax = fig.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
         fig.set_tight_layout(True)
-        ax.plot(X, Y, 'r')
+        #ax.plot(X, Y, 'r')
         draw_figure(self.Canvas1, fig)
 
         #self.draw_graph1()
 
-        fig1 = plt.Figure()
-        ax1 = fig1.add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
+        #fig1 = plt.Figure()
+        #ax1 = fig1.add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
         fig1.set_tight_layout(True)
-        ax1.plot(X1, Y1, 'r')
+        #ax1.plot(X1, Y1, 'r')
         draw_figure(self.Canvas2, fig1)
 
 
-        fig2 = plt.Figure()
-        ax2 = fig2.add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
+        #fig2 = plt.Figure()
+        #ax2 = fig2.add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
         fig2.set_tight_layout(True)
-        ax2.plot(X2, Y2, 'r')
+        #ax2.plot(X2, Y2, 'r')
         draw_figure(self.Canvas3, fig2)
 
     # em callback nao pode ter loop demorado (e jamais "while True")
@@ -578,6 +600,25 @@ def draw_figure(canvas, figure):
     canvas.show()
     canvas.get_tk_widget().pack(anchor = tk.NW, side=tk.TOP, fill=tk.BOTH, expand=1)
 
+def animate(i):
+    interp = Interpretador()
+
+    Temp = interp.df.Tempo.iloc[-15:].as_matrix().reshape(-1)
+    Distr = interp.df.Distribuicao.iloc[-15:].as_matrix().reshape(-1)
+    Vel = interp.df.Velocidade.iloc[-15:].as_matrix().reshape(-1)
+    Rot = interp.df.Rotacao.iloc[-15:].as_matrix().reshape(-1)
+    Comb = interp.df.Combustivel.iloc[-15:].as_matrix().reshape(-1)
+
+
+    ax.clear()
+    ax1.clear()
+    ax2.clear()
+
+    ax.plot(Temp,Distr, 'r')
+    ax1.plot(Temp,Vel, 'r')
+    ax1.plot(Temp,Rot, 'b')
+    ax2.plot(Temp,Comb, 'r')
+
 def on_close():
     print("[Closing]")
     thread_backend.Stop()
@@ -585,6 +626,9 @@ def on_close():
     sys.exit()
 
 def main():
+
+    refresh_time = 250
+
     # Cria thread do backend
     global thread_backend
     try:
@@ -596,8 +640,12 @@ def main():
 
     # Cria interface (frontend)
     global root
-    root = Tk()
-    top = Frontend(root)
+    root = Frontend()
+    #root = Tk()
+    #top = Frontend(root)
+    ani = animation.FuncAnimation(fig, animate, interval=refresh_time)
+    ani1 = animation.FuncAnimation(fig1, animate, interval=refresh_time)
+    ani2 = animation.FuncAnimation(fig2, animate, interval=refresh_time)
     root.mainloop()
 
 if __name__ == '__main__':
