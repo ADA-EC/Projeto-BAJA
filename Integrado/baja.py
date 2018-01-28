@@ -6,14 +6,13 @@ import pandas as pd
 from datetime import datetime
 from time import sleep
 
-import matplotlib.backends.tkagg as tkagg
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
-matplotlib.use("TkAgg")
-from matplotlib.backend_bases import key_press_handler
-import matplotlib.pyplot as plt
+matplotlib.use('TkAgg')
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 import matplotlib.animation as animation
 from matplotlib import style
+style.use("ggplot")
 
 from tkinter import *
 import tkinter.ttk as ttk
@@ -23,17 +22,6 @@ try:
     import threading
 except ImportError:
     import dummy_threading as threading
-
-
-style.use("ggplot")
-
-fig = plt.Figure()
-ax = fig.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
-fig1 = plt.Figure()
-ax1 = fig1.add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
-fig2 = plt.Figure()
-ax2 = fig2.add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
-
 
 # Endereco do PORT de entrada. i.e. /dev/ttyCOM6
 # Se PORT for None, faz leituras aleatorias.
@@ -69,9 +57,18 @@ class Interpretador():
         self.df['KmRodadosTotal'] = np.nan
         self._KmRodadosTotal = 0
 
-    def last(self, label):
-        if self.df.index.shape[0] > 0:
-            return self.df[label].iloc[-1]
+    def last(self, label, length=1, conv=True):
+        l = self.df[label].iloc[-length:].as_matrix().reshape(-1)
+        if conv == False:
+            return l
+
+        # conversion from list to number
+        if l.shape[0] == 0:
+            return None
+        elif l.shape[0] == 1:
+            return l[0]
+        else:
+            return l
 
     def append(self, readings):
         # Append readings to Dataframe
@@ -168,14 +165,8 @@ class Backend(threading.Thread):
 
 
 class Frontend(tk.Tk):
-    def __init__(self, *args, **kwargs):
 
-        top = self
-
-        tk.Tk.__init__(self, *args, **kwargs)
-
-        '''This class configures and populates the toplevel window.
-           top is the toplevel containing window.'''
+    def create_elem(self, top):
         _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
         _fgcolor = '#000000'  # X11 color: 'black'
         _compcolor = '#d9d9d9' # X11 color: 'gray85'
@@ -188,17 +179,12 @@ class Frontend(tk.Tk):
         font24 = "-family {Segoe UI} -size 18 -weight normal -slant "  \
             "roman -underline 0 -overstrike 0"
 
-        
         top.geometry("1366x705+0+0")
 
         top.title("Telemetria EESC USP BAJA")
         top.configure(background="#d9d9d9")
         top.configure(highlightbackground="#d9d9d9")
         top.configure(highlightcolor="black")
-
-        # make sure widget instances are deleted
-        top.protocol("WM_DELETE_WINDOW", on_close)
-        
 
         self.Canvas1 = Canvas(top)
         self.Canvas1.place(relx=0.02, rely=0.11, relheight=0.46, relwidth=0.31)
@@ -468,45 +454,57 @@ class Frontend(tk.Tk):
         self.Message8.configure(text='''Telemetria EESC USP BAJA''')
         self.Message8.configure(width=500)
 
+    def __init__(self, *args, **kwargs):
+        '''This class configures and populates the toplevel window.
+           top is the toplevel containing window.'''
+        top = self
+        tk.Tk.__init__(self, *args, **kwargs)
+
+        # make sure widget instances are deleted
+        top.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        # cria elementos da janela: botoes, paineis, titulo, etc
+        self.create_elem(self)
+
+        self.backend = None
         self.pause = True
 
-        X = [0, 2, 4, 8]
-        Y = [0, 5, 7, 6]
-        X1 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        Y1 = [3, 5, 6, 8, 9, 7, 8, 6, 9, 10]
-        X2 = [0, 1, 2, 3, 5, 6]
-        Y2 = [0, 2, 3, 7, 5, 8]
-        ticks = [0,2,4,8]
+        self.fig1 = Figure()
+        self.ax1 = self.fig1.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
+        self.fig1.set_tight_layout(True)
+        self.Canvas1 = FigureCanvasTkAgg(self.fig1, self.Canvas1)
+        self.Canvas1.show()
+        self.Canvas1.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        self.ani1 = animation.FuncAnimation(self.fig1, self.update_fig, lambda: self.gen_values_anim(label='Distribuicao'), fargs=(self.ax1,'c'))
 
-        #X = 10*np.array(range(len(data1)))
-        #Y = np.sin(X)
+        self.fig2 = Figure()
+        self.ax2 = self.fig2.add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
+        self.fig2.set_tight_layout(True)
+        self.Canvas2 = FigureCanvasTkAgg(self.fig2, self.Canvas2)
+        self.Canvas2.show()
+        self.Canvas2.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        self.ani2b = animation.FuncAnimation(self.fig2, self.update_fig, lambda: self.gen_values_anim(label='Rotacao'), fargs=(self.ax2,'y'))
+        # A velocidade eh instanciada em segundo para ficar por cima da rotacao
+        self.ani2a = animation.FuncAnimation(self.fig2, self.update_fig, lambda: self.gen_values_anim(label='Velocidade'), fargs=(self.ax2,'c'))
 
-        #X1 = np.linspace(0, 2* np.pi, 50)
-        #Y1 = np.cos(X1)
+        self.fig3 = Figure()
+        self.ax3 = self.fig3.add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
+        self.fig3.set_tight_layout(True)
+        self.Canvas3 = FigureCanvasTkAgg(self.fig3, self.Canvas3)
+        self.Canvas3.show()
+        self.Canvas3.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        self.ani3 = animation.FuncAnimation(self.fig3, self.update_fig, lambda: self.gen_values_anim(label='Combustivel'), fargs=(self.ax3,'c'))
 
-        #X2 = np.linspace(0, 2* np.pi, 50)
-        #Y2 = np.arcsinh(X2)
+    def update_fig(self, data, ax, color):
+        t, y = data
+        ax.plot(t, y, c=color)
 
-        #fig = plt.Figure()
-        #ax = fig.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
-        fig.set_tight_layout(True)
-        #ax.plot(X, Y, 'r')
-        draw_figure(self.Canvas1, fig)
-
-        #self.draw_graph1()
-
-        #fig1 = plt.Figure()
-        #ax1 = fig1.add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
-        fig1.set_tight_layout(True)
-        #ax1.plot(X1, Y1, 'r')
-        draw_figure(self.Canvas2, fig1)
-
-
-        #fig2 = plt.Figure()
-        #ax2 = fig2.add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
-        fig2.set_tight_layout(True)
-        #ax2.plot(X2, Y2, 'r')
-        draw_figure(self.Canvas3, fig2)
+    def gen_values_anim(self, label):
+        interp = Interpretador()
+        while True:
+            t = interp.last('Tempo', 2, conv=False)
+            y = interp.last(label, 2, conv=False)
+            yield t, y
 
     # em callback nao pode ter loop demorado (e jamais "while True")
     def callback_button_box(self):
@@ -515,14 +513,13 @@ class Frontend(tk.Tk):
     def callback_button_on(self):
         print("ON")
         self.pause = False
-        root.after(500, self.update_figure)
-        root.after(500, self.update_choke)
-        thread_backend.Resume()
+        self.after(500, self.update_choke)
+        self.backend.Resume()
 
     def callback_button_pause(self):
         print("PAUSE")
         self.pause = True
-        thread_backend.Pause()
+        self.backend.Pause()
 
     def callback_button_tempo(self):
         #self.draw_graph1()
@@ -539,21 +536,22 @@ class Frontend(tk.Tk):
         # que o interpretador quer salvar em disco. Nao tem problema de
         # concorrencia, mas o SO fica maluco e nao salva direito, ou demora
         # pra salvar. Pausando, ele salva rapido.
-        thread_backend.Pause()
+        self.backend.Pause()
         interp.saveExcel('baja.xlsx') #'+str(datetime.now())+
-        thread_backend.Resume()
+        self.backend.Resume()
 
     def update_choke(self):
         interp = Interpretador() # Singleton
         #Atribui a CHOKE o ultimo Choke registrado
         CHOKE = interp.last('Choke')
+
         if CHOKE is None:
             # Nothing to be done, must wait at least one reading
             pass
         elif CHOKE == 1:
             #print('preto')
             pass  #Tem que botar alguma coisa da interface em preto
-        elif CHOKE ==0:
+        elif CHOKE == 0:
             #print('vermelho')
             pass  #Tem que botar alguma coisa da interface em vermelho
         else:
@@ -562,8 +560,7 @@ class Frontend(tk.Tk):
             pass
         # Isso faz com que a funcao seja chamada a cada 500ms pelo root.mainloop()
         if self.pause == False:
-            root.after(500, self.update_choke)
-
+            self.after(500, self.update_choke)
 
     def update_box(self):
         ##### Esta comentado pq falta pegar valores corretamente #####
@@ -584,53 +581,15 @@ class Frontend(tk.Tk):
         #         pass  #Tem que botar alguma coisa da interface em preto
         pass
 
-    def update_figure(self):
-        interp = Interpretador()
-
-        X = interp.df.Tempo.iloc[-15:].as_matrix().reshape(-1)
-        Y = interp.df.Distribuicao.iloc[-15:].as_matrix().reshape(-1)
-
-        ### Fazer ###
-
-        root.after(500, self.update_figure)
-
-
-def draw_figure(canvas, figure):
-    canvas = FigureCanvasTkAgg(figure, master=canvas)
-    canvas.show()
-    canvas.get_tk_widget().pack(anchor = tk.NW, side=tk.TOP, fill=tk.BOTH, expand=1)
-
-def animate(i):
-    interp = Interpretador()
-
-    Temp = interp.df.Tempo.iloc[-15:].as_matrix().reshape(-1)
-    Distr = interp.df.Distribuicao.iloc[-15:].as_matrix().reshape(-1)
-    Vel = interp.df.Velocidade.iloc[-15:].as_matrix().reshape(-1)
-    Rot = interp.df.Rotacao.iloc[-15:].as_matrix().reshape(-1)
-    Comb = interp.df.Combustivel.iloc[-15:].as_matrix().reshape(-1)
-
-
-    ax.clear()
-    ax1.clear()
-    ax2.clear()
-
-    ax.plot(Temp,Distr, 'r')
-    ax1.plot(Temp,Vel, 'r')
-    ax1.plot(Temp,Rot, 'b')
-    ax2.plot(Temp,Comb, 'r')
-
-def on_close():
-    print("[Closing]")
-    thread_backend.Stop()
-    root.destroy()
-    sys.exit()
+    def on_close(self):
+        print("[Closing]")
+        self.backend.Stop()
+        self.quit()
+        self.destroy()
+        sys.exit()
 
 def main():
-
-    refresh_time = 250
-
     # Cria thread do backend
-    global thread_backend
     try:
         thread_backend = Backend()
         thread_backend.start()
@@ -639,13 +598,8 @@ def main():
         sys.exit()
 
     # Cria interface (frontend)
-    global root
     root = Frontend()
-    #root = Tk()
-    #top = Frontend(root)
-    ani = animation.FuncAnimation(fig, animate, interval=refresh_time)
-    ani1 = animation.FuncAnimation(fig1, animate, interval=refresh_time)
-    ani2 = animation.FuncAnimation(fig2, animate, interval=refresh_time)
+    root.backend = thread_backend
     root.mainloop()
 
 if __name__ == '__main__':
