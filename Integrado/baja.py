@@ -89,7 +89,6 @@ class Interpretador():
         else:
             self.df.KmRodadosTotal.iloc[-1] = 0
 
-
     def saveExcel(self, filename='output.xlsx'):
         writer = pd.ExcelWriter(filename)
         df_exc = self.df[['Tempo','Velocidade', 'Rotacao', 'Distribuicao', 'Combustivel', 'KmRodadosTotal', 'Posicao']]
@@ -133,11 +132,21 @@ class LeitorSerial():
         readings.insert(0, time)
         return readings
 
+    def LeituraZerada(self):
+        l = [str(x) for x in np.random.randint(0, 1, size=7)]
+        l += ['\n']
+        line = ';'.join(l)
+        readings = [np.float(x) for x in line.split(';')[:-1]]
+        time = (datetime.now()-self.tstart).total_seconds()
+        readings.insert(0, time)
+        return readings
+
 class Backend(threading.Thread):
     def __init__(self):
       threading.Thread.__init__(self)
       self.pause = True
       self.stop = False
+      self.zerar = False
       self.leitor = LeitorSerial(port=PORT)
 
     def Stop(self):
@@ -157,9 +166,13 @@ class Backend(threading.Thread):
                 readings = None
                 if PORT is not None:
                     readings = self.leitor.Leitura()
+                elif self.zerar == True:
+                    readings = self.leitor.LeituraZerada()
+                    self.zerar = False
                 else:
                     readings = self.leitor.LeituraAleatoria()
                     sleep(1)
+
                 interp.append(readings)
                 print(interp.df.tail())
 
@@ -526,7 +539,8 @@ class Frontend(tk.Tk):
         pass
 
     def callback_button_zerar(self):
-        pass
+        self.backend.zerar = True
+        print("ZERAR")
 
     def callback_button_salvar(self):
         # Seria legal dar a opcao de escolher o nome do arquivo antes de salvar
@@ -540,6 +554,11 @@ class Frontend(tk.Tk):
         interp.saveExcel('baja.xlsx') #'+str(datetime.now())+
         self.backend.Resume()
 
+    def define_choke(self, mode_canvas):
+        self.Canvas1.configure(background=mode_canvas)
+        self.Canvas2.configure(background=mode_canvas)
+        self.Canvas3.configure(background=mode_canvas)
+
     def update_choke(self):
         interp = Interpretador() # Singleton
         #Atribui a CHOKE o ultimo Choke registrado
@@ -549,11 +568,11 @@ class Frontend(tk.Tk):
             # Nothing to be done, must wait at least one reading
             pass
         elif CHOKE == 1:
-            #print('preto')
-            pass  #Tem que botar alguma coisa da interface em preto
+            print('preto')
+            define_choke('black')
         elif CHOKE == 0:
-            #print('vermelho')
-            pass  #Tem que botar alguma coisa da interface em vermelho
+            print('vermelho')
+            define_choke('red')
         else:
             #print('Other')
             #print(CHOKE)
