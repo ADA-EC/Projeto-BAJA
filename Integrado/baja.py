@@ -125,6 +125,8 @@ class LeitorSerial():
 
     def LeituraAleatoria(self):
         l = np.random.randint(0, 100, size=7)
+        box_values = [0,0,0,0,48,48,49]
+        l[0] = box_values[np.random.choice(len(box_values))]# BOX
         l[-1] %= 2 # choke is either 0 or 1
         l = [str(x) for x in l]
         l += ['\n']
@@ -548,7 +550,7 @@ class Frontend(tk.Tk):
         print("ON")
         self.pause = False
         self.after(500, self.update_choke)
-        self.after(500, self.update_box)
+        self.after(100, self.update_box)
         self.backend.Resume()
         self.start_ani()
 
@@ -581,32 +583,36 @@ class Frontend(tk.Tk):
     def callback_button_box(self):
         if self.box_button_pressed == False:
             self.box_button_pressed = True
-            self.Button3.configure(background="#ff1900")
-            self.Button3.configure(activebackground="#ff1900")
+            self.Button3.configure(foreground="#ff1900")
+            self.Button3.configure(activeforeground="#ff1900")
 
         else:
             self.box_button_pressed = False
-            self.Button3.configure(background="#2e0400")
-            self.Button3.configure(activebackground="#2e0400")
+            self.Button3.configure(foreground="#000000")
+            self.Button3.configure(activeforeground="#000000")
+            # self.Button3.configure(background="#2e0400")
+            # self.Button3.configure(activebackground="#2e0400")
 
     def update_box(self):
         # #Atribui a BOX o ultimo Box registrado
-        # interp = Interpretador()
-        # BOX = interp.last('Box')
-        # if self.box_button_pressed:
-        #     if BOX == 0 or BOX == 48:
-        #         leitor.MandaUm() #Função ainda não implementada para transmitir '1' na porta serial
-        #     elif BOX == 49:
-        #         print('vermelho')
-        #         self.Button3.configure(background="#ff1900")
-        # else:
-        #     if BOX == 49:
-        #         leitor.MandaZero() #Função ainda não implementada para transmitir '0' na porta serial
-        #     elif BOX == 48:
-        #         print('preto')
-        #         self.Button3.configure(background="#2e0400")
+        interp = Interpretador()
+        BOX = interp.last('Box')
+        if self.box_button_pressed:
+            if BOX == 0 or BOX == 48:
+                self.backend.leitor.MandaUm() #Função ainda não implementada para transmitir '1' na porta serial
+            elif BOX == 49:
+                print('box:vermelho')
+                self.Button3.configure(background="#7f0c00")
+                self.Button3.configure(activebackground="#7f0c00")
+        else:
+            if BOX == 49:
+                self.backend.leitor.MandaZero() #Função ainda não implementada para transmitir '0' na porta serial
+            elif BOX == 48:
+                print('box:preto')
+                self.Button3.configure(background="#d9d9d9")
+                self.Button3.configure(activebackground="#d9d9d9")
         if self.pause == False:
-            self.after(500, self.update_box)
+            self.after(100, self.update_box)
 
     def define_choke(self, mode_canvas):
         for ax in self.ax.values():
@@ -621,10 +627,10 @@ class Frontend(tk.Tk):
             # Nothing to be done, must wait at least one reading
             pass
         elif CHOKE == 1:
-            print('preto')
+            print('choke:preto')
             self.define_choke('#000000')
         elif CHOKE == 0:
-            print('vermelho')
+            print('choke:vermelho')
             self.define_choke('#200000')
         else:
             #print('Other')
