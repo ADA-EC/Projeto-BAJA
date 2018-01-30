@@ -124,7 +124,9 @@ class LeitorSerial():
         return readings
 
     def LeituraAleatoria(self):
-        l = [str(x) for x in np.random.randint(0, 100, size=7)]
+        l = np.random.randint(0, 100, size=7)
+        l[-1] %= 2 # choke is either 0 or 1
+        l = [str(x) for x in l]
         l += ['\n']
         line = ';'.join(l)
         readings = [np.float(x) for x in line.split(';')[:-1]]
@@ -132,21 +134,17 @@ class LeitorSerial():
         readings.insert(0, time)
         return readings
 
-    def LeituraZerada(self):
-        l = [str(x) for x in np.random.randint(0, 1, size=7)]
-        l += ['\n']
-        line = ';'.join(l)
-        readings = [np.float(x) for x in line.split(';')[:-1]]
-        time = (datetime.now()-self.tstart).total_seconds()
-        readings.insert(0, time)
-        return readings
+    def MandaUm(self):
+        pass
+
+    def MandaZero(self):
+        pass
 
 class Backend(threading.Thread):
     def __init__(self):
       threading.Thread.__init__(self)
       self.pause = True
       self.stop = False
-      self.zerar = False
       self.leitor = LeitorSerial(port=PORT)
 
     def Stop(self):
@@ -166,9 +164,6 @@ class Backend(threading.Thread):
                 readings = None
                 if PORT is not None:
                     readings = self.leitor.Leitura()
-                elif self.zerar == True:
-                    readings = self.leitor.LeituraZerada()
-                    self.zerar = False
                 else:
                     readings = self.leitor.LeituraAleatoria()
                     sleep(1)
@@ -481,47 +476,65 @@ class Frontend(tk.Tk):
         self.backend = None
         self.pause = True
 
-        self.fig1 = Figure()
-        self.ax1 = self.fig1.add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
-        self.fig1.set_tight_layout(True)
-        self.Canvas1 = FigureCanvasTkAgg(self.fig1, self.Canvas1)
-        self.Canvas1.show()
-        self.Canvas1.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        self.ani1 = animation.FuncAnimation(self.fig1, self.update_fig, lambda: self.gen_values_anim(label='Distribuicao'), fargs=(self.ax1,'c'))
+        self.box_button_pressed = False
 
-        self.fig2 = Figure()
-        self.ax2 = self.fig2.add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
-        self.fig2.set_tight_layout(True)
-        self.Canvas2 = FigureCanvasTkAgg(self.fig2, self.Canvas2)
-        self.Canvas2.show()
-        self.Canvas2.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        self.ani2b = animation.FuncAnimation(self.fig2, self.update_fig, lambda: self.gen_values_anim(label='Rotacao'), fargs=(self.ax2,'y'))
+        self.Canvas = {1: self.Canvas1, 2: self.Canvas2, 3: self.Canvas3}
+        self.fig = {}
+        self.ax = {}
+        self.ani = {}
+        self.fig[1] = Figure()
+        self.ax[1] = self.fig[1].add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
+        self.fig[1].set_tight_layout(True)
+        self.Canvas[1] = FigureCanvasTkAgg(self.fig[1], self.Canvas1)
+        self.Canvas[1].show()
+        self.Canvas[1].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        self.ani[1] = animation.FuncAnimation(self.fig[1], self.update_fig, lambda: self.gen_values_anim(label='Distribuicao'), fargs=(self.ax[1],'c'))
+
+        self.fig[2] = Figure()
+        self.ax[2] = self.fig[2].add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
+        self.fig[2].set_tight_layout(True)
+        self.Canvas[2] = FigureCanvasTkAgg(self.fig[2], self.Canvas[2])
+        self.Canvas[2].show()
+        self.Canvas[2].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        self.ani[22] = animation.FuncAnimation(self.fig[2], self.update_fig, lambda: self.gen_values_anim(label='Rotacao'), fargs=(self.ax[2],'y'))
         # A velocidade eh instanciada em segundo para ficar por cima da rotacao
-        self.ani2a = animation.FuncAnimation(self.fig2, self.update_fig, lambda: self.gen_values_anim(label='Velocidade'), fargs=(self.ax2,'c'))
+        self.ani[21] = animation.FuncAnimation(self.fig[2], self.update_fig, lambda: self.gen_values_anim(label='Velocidade'), fargs=(self.ax[2],'c'))
 
-        self.fig3 = Figure()
-        self.ax3 = self.fig3.add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
-        self.fig3.set_tight_layout(True)
-        self.Canvas3 = FigureCanvasTkAgg(self.fig3, self.Canvas3)
-        self.Canvas3.show()
-        self.Canvas3.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        self.ani3 = animation.FuncAnimation(self.fig3, self.update_fig, lambda: self.gen_values_anim(label='Combustivel'), fargs=(self.ax3,'c'))
+        self.fig[3] = Figure()
+        self.ax[3] = self.fig[3].add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
+        self.fig[3].set_tight_layout(True)
+        self.Canvas[3] = FigureCanvasTkAgg(self.fig[3], self.Canvas[3])
+        self.Canvas[3].show()
+        self.Canvas[3].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        self.ani[3] = animation.FuncAnimation(self.fig[3], self.update_fig, lambda: self.gen_values_anim(label='Combustivel'), fargs=(self.ax[3],'c'))
+
+        self.stop_ani()
+
+    def stop_ani(self):
+        for ani in self.ani.values():
+            ani.event_source.stop()
+
+    def start_ani(self):
+        for ani in self.ani.values():
+            ani.event_source.start()
 
     def update_fig(self, data, ax, color, NumLinhas = 15):
         t, y = data
         AX2 = False
-        if ax == self.ax2:
+        if ax == self.ax[2]:
             AX2 = True
             NumLinhas *= 2
         if len(t) > 1:
             if len(ax.lines) < 2:
                 ax.plot(t, y, c=color)
-            elif ax.lines[-1].get_xdata(orig=True)[0] != t[0] or (AX2 and ax.lines[-2].get_xdata(orig=True)[0] != t[0]):
+            elif ax.lines[-1].get_xdata(orig=True)[0] != t[0] or \
+                 (AX2 and ax.lines[-2].get_xdata(orig=True)[0] != t[0]):
                 ax.plot(t, y, c=color)
 
         if len(ax.lines) > NumLinhas:
             ax.lines[0].remove()
-        
+            ax.relim()
+
 
     def gen_values_anim(self, label):
         interp = Interpretador()
@@ -531,27 +544,27 @@ class Frontend(tk.Tk):
             yield t, y
 
     # em callback nao pode ter loop demorado (e jamais "while True")
-    def callback_button_box(self):
-        print("Funfou")
-
     def callback_button_on(self):
         print("ON")
         self.pause = False
         self.after(500, self.update_choke)
+        self.after(500, self.update_box)
         self.backend.Resume()
+        self.start_ani()
 
     def callback_button_pause(self):
         print("PAUSE")
         self.pause = True
         self.backend.Pause()
+        self.stop_ani()
 
     def callback_button_tempo(self):
         #self.draw_graph1()
         pass
 
     def callback_button_zerar(self):
-        self.backend.zerar = True
         print("ZERAR")
+        ## Deve limpar a figura
 
     def callback_button_salvar(self):
         # Seria legal dar a opcao de escolher o nome do arquivo antes de salvar
@@ -565,10 +578,39 @@ class Frontend(tk.Tk):
         interp.saveExcel('baja.xlsx') #'+str(datetime.now())+
         self.backend.Resume()
 
+    def callback_button_box(self):
+        if self.box_button_pressed == False:
+            self.box_button_pressed = True
+            self.Button3.configure(background="#ff1900")
+            self.Button3.configure(activebackground="#ff1900")
+
+        else:
+            self.box_button_pressed = False
+            self.Button3.configure(background="#2e0400")
+            self.Button3.configure(activebackground="#2e0400")
+
+    def update_box(self):
+        # #Atribui a BOX o ultimo Box registrado
+        # interp = Interpretador()
+        # BOX = interp.last('Box')
+        # if self.box_button_pressed:
+        #     if BOX == 0 or BOX == 48:
+        #         leitor.MandaUm() #Função ainda não implementada para transmitir '1' na porta serial
+        #     elif BOX == 49:
+        #         print('vermelho')
+        #         self.Button3.configure(background="#ff1900")
+        # else:
+        #     if BOX == 49:
+        #         leitor.MandaZero() #Função ainda não implementada para transmitir '0' na porta serial
+        #     elif BOX == 48:
+        #         print('preto')
+        #         self.Button3.configure(background="#2e0400")
+        if self.pause == False:
+            self.after(500, self.update_box)
+
     def define_choke(self, mode_canvas):
-        self.Canvas1.configure(background=mode_canvas)
-        self.Canvas2.configure(background=mode_canvas)
-        self.Canvas3.configure(background=mode_canvas)
+        for ax in self.ax.values():
+            ax.set_facecolor(mode_canvas)
 
     def update_choke(self):
         interp = Interpretador() # Singleton
@@ -580,10 +622,10 @@ class Frontend(tk.Tk):
             pass
         elif CHOKE == 1:
             print('preto')
-            define_choke('black')
+            self.define_choke('#000000')
         elif CHOKE == 0:
             print('vermelho')
-            define_choke('red')
+            self.define_choke('#200000')
         else:
             #print('Other')
             #print(CHOKE)
@@ -591,25 +633,6 @@ class Frontend(tk.Tk):
         # Isso faz com que a funcao seja chamada a cada 500ms pelo root.mainloop()
         if self.pause == False:
             self.after(500, self.update_choke)
-
-    def update_box(self):
-        ##### Esta comentado pq falta pegar valores corretamente #####
-        # #Atribui a BOX o ultimo Box registrado
-        # val_botao_box = None # Pegar da inferface
-        # BOX = # pegar do Interpretador
-        # if val_botao_box == 1:
-        #     if BOX == 0 or BOX == 48:
-        #         leitor.MandaUm() #Função ainda não implementada para transmitir '1' na porta serial
-        #     elif BOX == 49:
-        #         print('vermelho')
-        #         pass  #Tem que botar alguma coisa da interface em vermelho
-        # elif val_botao_box == 0:
-        #     if BOX == 49:
-        #         leitor.MandaZero() #Função ainda não implementada para transmitir '0' na porta serial
-        #     elif BOX == 48:
-        #         print('preto')
-        #         pass  #Tem que botar alguma coisa da interface em preto
-        pass
 
     def on_close(self):
         print("[Closing]")
