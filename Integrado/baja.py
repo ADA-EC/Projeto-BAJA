@@ -540,7 +540,7 @@ class Frontend(tk.Tk):
     def update_fig_2(self, data, ax, c1, c2, TITLE = None, XLABEL = None, YLABEL = None):
         t1, y1, t2, y2 = data
         ax.cla()
-        if YLABEL != None:
+        if YLABEL is None:
             ax.set(ylabel = YLABEL)
         if TITLE != None:
             ax.set(title = TITLE)
@@ -549,11 +549,6 @@ class Frontend(tk.Tk):
         ax.plot(t1,y1, c=c1)
         ax.plot(t2,y2, c=c2)
 
-    def update_fig3(self, data, ax, color):
-        t, y = data
-        ax.cla()
-        ax.set(ylabel = '%', title = 'Combustível', xlabel = 'Tempo(s)')
-        ax.plot(t,y, c=color)
 
     def gen_values_anim(self, label):
         interp = Interpretador()
