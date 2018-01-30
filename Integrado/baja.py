@@ -98,6 +98,7 @@ Interpretador = SingletonDecorator(Interpretador)
 class LeitorSerial():
     def __init__(self, port=None, BaudRate = 9600):
         # atribui a tstart o tempo do sistema na criação do objeto
+        self.acumulador = 0
         self.tstart = datetime.now()
         self.port = port
         if self.port is not None:
@@ -119,7 +120,7 @@ class LeitorSerial():
         with self._lock:
             line = str(self.ser.readline(),'utf-8')
             readings = [np.float(x) for x in line.split(';')[:-1]]
-            time = (datetime.now()-self.tstart).total_seconds()
+            time = (datetime.now()-self.tstart).total_seconds() + self.acumulador
             readings.insert(0, time)
             return readings
 
@@ -128,9 +129,15 @@ class LeitorSerial():
         box_values = [0,0,0,0,48,48,49]
         l[0] = box_values[np.random.choice(len(box_values))]# BOX
         readings = list(l)
-        time = (datetime.now()-self.tstart).total_seconds()
+        time = (datetime.now()-self.tstart).total_seconds() + self.acumulador
         readings.insert(0, time)
         return readings
+
+    def Pause(self):
+        self.acumulador += (datetime.now()-self.tstart).total_seconds()
+
+    def Despause(self):
+        self.tstart = datetime.now()
 
     def MandaZero(self):
         if self.port is not None:
@@ -158,9 +165,11 @@ class Backend(threading.Thread):
 
     def Pause(self):
         self.pause = True
+        self.leitor.Pause()
 
     def Resume(self):
         self.pause = False
+        self.leitor.Despause()
 
     def run(self):
         interp = Interpretador() # Singleton
