@@ -470,11 +470,10 @@ class Frontend(tk.Tk):
     def __init__(self, *args, **kwargs):
         '''This class configures and populates the toplevel window.
            top is the toplevel containing window.'''
-        top = self
         tk.Tk.__init__(self, *args, **kwargs)
 
         # make sure widget instances are deleted
-        top.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # cria elementos da janela: botoes, paineis, titulo, etc
         self.create_elem(self)
@@ -508,9 +507,21 @@ class Frontend(tk.Tk):
         self.Canvas3.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
         self.ani3 = animation.FuncAnimation(self.fig3, self.update_fig, lambda: self.gen_values_anim(label='Combustivel'), fargs=(self.ax3,'c'))
 
-    def update_fig(self, data, ax, color):
+    def update_fig(self, data, ax, color, NumLinhas = 15):
         t, y = data
-        ax.plot(t, y, c=color)
+        AX2 = False
+        if ax == self.ax2:
+            AX2 = True
+            NumLinhas *= 2
+        if len(t) > 1:
+            if len(ax.lines) < 2:
+                ax.plot(t, y, c=color)
+            elif ax.lines[-1].get_xdata(orig=True)[0] != t[0] or (AX2 and ax.lines[-2].get_xdata(orig=True)[0] != t[0]):
+                ax.plot(t, y, c=color)
+
+        if len(ax.lines) > NumLinhas:
+            ax.lines[0].remove()
+        
 
     def gen_values_anim(self, label):
         interp = Interpretador()
