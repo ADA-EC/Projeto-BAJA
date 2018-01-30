@@ -23,10 +23,6 @@ try:
 except ImportError:
     import dummy_threading as threading
 
-# Endereco do PORT de entrada. i.e. /dev/ttyCOM6
-# Se PORT for None, faz leituras aleatorias.
-PORT = None#'/dev/pts/5'
-
 ### Implements Singleton Design Pattern
 class SingletonDecorator:
     """http://python-3-patterns-idioms-test.readthedocs.io/en/latest/Singleton.html"""
@@ -104,7 +100,8 @@ class LeitorSerial():
     def __init__(self, port=None, BaudRate = 9600):
         # atribui a tstart o tempo do sistema na criação do objeto
         self.tstart = datetime.now()
-        if port is not None:
+        self.port = port
+        if self.port is not None:
             # configura a conexão serial
             # detalhes em "https://pythonhosted.org/pyserial/pyserial_api.html"
             self.ser = serial.Serial(
@@ -114,40 +111,49 @@ class LeitorSerial():
                 stopbits=serial.STOPBITS_ONE,
                 bytesize=serial.EIGHTBITS
             )
+            # cria um lock para evitar acesso mutuo a porta serial
+            self._lock = threading.Lock()
+            print('[Conexao serial aberta]')
         print('[Leitor Serial iniciado]')
 
     def Leitura(self):
-        line = str(self.ser.readline(),'utf-8')
-        readings = [np.float(x) for x in line.split(';')[:-1]]
-        time = (datetime.now()-self.tstart).total_seconds()
-        readings.insert(0, time)
-        return readings
+        with self._lock:
+            line = str(self.ser.readline(),'utf-8')
+            readings = [np.float(x) for x in line.split(';')[:-1]]
+            time = (datetime.now()-self.tstart).total_seconds()
+            readings.insert(0, time)
+            return readings
 
     def LeituraAleatoria(self):
         l = np.random.randint(0, 100, size=7)
         box_values = [0,0,0,0,48,48,49]
         l[0] = box_values[np.random.choice(len(box_values))]# BOX
         l[-1] %= 2 # choke is either 0 or 1
-        l = [str(x) for x in l]
-        l += ['\n']
-        line = ';'.join(l)
-        readings = [np.float(x) for x in line.split(';')[:-1]]
+        readings = list(l)
         time = (datetime.now()-self.tstart).total_seconds()
         readings.insert(0, time)
         return readings
 
-    def MandaUm(self):
-        pass
-
     def MandaZero(self):
-        pass
+        if self.port is not None:
+            with self._lock:
+                self.ser.write(b'0')
+
+    def MandaUm(self):
+        if self.port is not None:
+            with self._lock:
+                self.ser.write(b'1')
+
 
 class Backend(threading.Thread):
-    def __init__(self):
-      threading.Thread.__init__(self)
-      self.pause = True
-      self.stop = False
-      self.leitor = LeitorSerial(port=PORT)
+    def __init__(self, port=None):
+        """port: Endereco do PORT de entrada. i.e. /dev/ttyCOM6
+        Se PORT for None, faz leituras aleatorias."""
+        threading.Thread.__init__(self)
+        self.pause = True
+        self.stop = False
+        self.port = port
+        self.leitor = LeitorSerial(port=port)
 
     def Stop(self):
         self.stop = True
@@ -164,7 +170,7 @@ class Backend(threading.Thread):
             if self.pause == False:
                 print("[Running Backend]")
                 readings = None
-                if PORT is not None:
+                if self.port is not None:
                     readings = self.leitor.Leitura()
                 else:
                     readings = self.leitor.LeituraAleatoria()
@@ -484,13 +490,15 @@ class Frontend(tk.Tk):
         self.fig = {}
         self.ax = {}
         self.ani = {}
+
         self.fig[1] = Figure()
         self.ax[1] = self.fig[1].add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
-        self.fig[1].set_tight_layout(True)
+        #self.fig[1].set_tight_layout(True)
         self.Canvas[1] = FigureCanvasTkAgg(self.fig[1], self.Canvas1)
         self.Canvas[1].show()
         self.Canvas[1].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        self.ani[1] = animation.FuncAnimation(self.fig[1], self.update_fig, lambda: self.gen_values_anim(label='Distribuicao'), fargs=(self.ax[1],'c'))
+        self.ani[1] = animation.FuncAnimation(self.fig[1], self.update_fig, \
+            lambda: self.gen_values_anim(label='Distribuicao'), fargs=(self.ax[1],'c'))
 
         self.fig[2] = Figure()
         self.ax[2] = self.fig[2].add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
@@ -498,13 +506,12 @@ class Frontend(tk.Tk):
         self.Canvas[2] = FigureCanvasTkAgg(self.fig[2], self.Canvas[2])
         self.Canvas[2].show()
         self.Canvas[2].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        self.ani[22] = animation.FuncAnimation(self.fig[2], self.update_fig, lambda: self.gen_values_anim(label='Rotacao'), fargs=(self.ax[2],'y'))
-        # A velocidade eh instanciada em segundo para ficar por cima da rotacao
-        self.ani[21] = animation.FuncAnimation(self.fig[2], self.update_fig, lambda: self.gen_values_anim(label='Velocidade'), fargs=(self.ax[2],'c'))
+        self.ani[2] = animation.FuncAnimation(self.fig[2], self.update_fig_2, \
+            self.gen_values_anim_2, fargs=(self.ax[2],'y', 'c'))
 
         self.fig[3] = Figure()
         self.ax[3] = self.fig[3].add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
-        self.fig[3].set_tight_layout(True)
+        #self.fig[3].set_tight_layout(True)
         self.Canvas[3] = FigureCanvasTkAgg(self.fig[3], self.Canvas[3])
         self.Canvas[3].show()
         self.Canvas[3].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
@@ -520,30 +527,34 @@ class Frontend(tk.Tk):
         for ani in self.ani.values():
             ani.event_source.start()
 
-    def update_fig(self, data, ax, color, NumLinhas = 15):
+    def update_fig(self, data, ax, color):
         t, y = data
-        AX2 = False
-        if ax == self.ax[2]:
-            AX2 = True
-            NumLinhas *= 2
-        if len(t) > 1:
-            if len(ax.lines) < 2:
-                ax.plot(t, y, c=color)
-            elif ax.lines[-1].get_xdata(orig=True)[0] != t[0] or \
-                 (AX2 and ax.lines[-2].get_xdata(orig=True)[0] != t[0]):
-                ax.plot(t, y, c=color)
+        ax.cla()
+        ax.plot(t,y, c=color)
 
-        if len(ax.lines) > NumLinhas:
-            ax.lines[0].remove()
-            ax.relim()
-
+    def update_fig_2(self, data, ax, c1, c2):
+        t1, y1, t2, y2 = data
+        ax.cla()
+        ax.set(ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
+        ax.plot(t1,y1, c=c1)
+        ax.plot(t2,y2, c=c2)
 
     def gen_values_anim(self, label):
         interp = Interpretador()
         while True:
-            t = interp.last('Tempo', 2, conv=False)
-            y = interp.last(label, 2, conv=False)
+            t = interp.last('Tempo', 20, conv=False)
+            y = interp.last(label, 20, conv=False)
             yield t, y
+
+    def gen_values_anim_2(self):
+        iter_vel = self.gen_values_anim('Velocidade')
+        iter_rot = self.gen_values_anim('Rotacao')
+        while True:
+            t1, y1 = next(iter_vel)
+            t2, y2 = next(iter_rot)
+            yield t1,y1,t2,y2
+
+
 
     # em callback nao pode ter loop demorado (e jamais "while True")
     def callback_button_on(self):
@@ -598,16 +609,18 @@ class Frontend(tk.Tk):
         interp = Interpretador()
         BOX = interp.last('Box')
         if self.box_button_pressed:
-            if BOX == 0 or BOX == 48:
-                self.backend.leitor.MandaUm() #Função ainda não implementada para transmitir '1' na porta serial
-            elif BOX == 49:
+            if BOX == 0 or BOX == ord('0'): # '0' em ascii tem valor 48
+                print('manda um')
+                self.backend.leitor.MandaUm()
+            elif BOX == ord('1'): # '1' em ascii tem valor 49
                 print('box:vermelho')
                 self.Button3.configure(background="#7f0c00")
                 self.Button3.configure(activebackground="#7f0c00")
         else:
-            if BOX == 49:
-                self.backend.leitor.MandaZero() #Função ainda não implementada para transmitir '0' na porta serial
-            elif BOX == 48:
+            if BOX == ord('1'):
+                print('manda zero')
+                self.backend.leitor.MandaZero()
+            elif BOX ==  ord('0'):
                 print('box:preto')
                 self.Button3.configure(background="#d9d9d9")
                 self.Button3.configure(activebackground="#d9d9d9")
@@ -648,9 +661,14 @@ class Frontend(tk.Tk):
         sys.exit()
 
 def main():
+    PORT = None
+    # Primeiro argumento é a porta serial
+    if len(sys.argv) > 1:
+        PORT = sys.argv[1]
+
     # Cria thread do backend
     try:
-        thread_backend = Backend()
+        thread_backend = Backend(port=PORT)
         thread_backend.start()
     except:
         print ("Error: unable to start backend's thread")

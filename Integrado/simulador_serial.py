@@ -3,14 +3,23 @@
 import serial
 import time
 import numpy as np
+import sys
 
 # Porta de entrada
-PORT = '/dev/pts/4'
+PORT = None
+
+if len(sys.argv) > 1:
+    PORT = sys.argv[1]
 
 def LeituraAleatoria():
-    l = [str(x) for x in np.random.randint(0, 100, size=7)]
+    l = np.random.randint(0, 100, size=7)
+    box_values = [0,0,0,0,48,48,49]
+    l[0] = box_values[np.random.choice(len(box_values))]# BOX
+    l[-1] %= 2 # choke is either 0 or 1
+    l = [str(x) for x in l]
     l += ['\n']
-    return bytes(';'.join(l), 'utf-8')
+    line = ';'.join(l)
+    return bytes(line, 'utf-8')
 
 ser = serial.Serial(PORT)
 
