@@ -43,8 +43,7 @@ class Interpretador():
         'Rotacao',
         'Distribuicao',
         'Combustivel',
-        'Posicao',
-        'Choke')
+        'Posicao')
 
     def __init__(self):
         # cria o DataFrame com as colunas que serão preenchidas
@@ -125,10 +124,9 @@ class LeitorSerial():
             return readings
 
     def LeituraAleatoria(self):
-        l = np.random.randint(0, 100, size=7)
+        l = np.random.randint(0, 100, size=6)
         box_values = [0,0,0,0,48,48,49]
         l[0] = box_values[np.random.choice(len(box_values))]# BOX
-        l[-1] %= 2 # choke is either 0 or 1
         readings = list(l)
         time = (datetime.now()-self.tstart).total_seconds()
         readings.insert(0, time)
@@ -492,30 +490,31 @@ class Frontend(tk.Tk):
         self.ani = {}
 
         self.fig[1] = Figure()
-        self.ax[1] = self.fig[1].add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo')
-        #self.fig[1].set_tight_layout(True)
+        self.ax[1] = self.fig[1].add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo(s)')
+        self.fig[1].set_tight_layout(True)
         self.Canvas[1] = FigureCanvasTkAgg(self.fig[1], self.Canvas1)
         self.Canvas[1].show()
         self.Canvas[1].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
         self.ani[1] = animation.FuncAnimation(self.fig[1], self.update_fig, \
-            lambda: self.gen_values_anim(label='Distribuicao'), fargs=(self.ax[1],'c'))
+            lambda: self.gen_values_anim(label='Distribuicao'), fargs=(self.ax[1],'c', 'Distribuição', 'Tempo(s)', 'Distribuição(%)'))
 
         self.fig[2] = Figure()
-        self.ax[2] = self.fig[2].add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
+        self.ax[2] = self.fig[2].add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo(s)')
         self.fig[2].set_tight_layout(True)
         self.Canvas[2] = FigureCanvasTkAgg(self.fig[2], self.Canvas[2])
         self.Canvas[2].show()
         self.Canvas[2].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
         self.ani[2] = animation.FuncAnimation(self.fig[2], self.update_fig_2, \
-            self.gen_values_anim_2, fargs=(self.ax[2],'y', 'c'))
+            self.gen_values_anim_2, fargs=(self.ax[2],'y', 'c', 'Velocidade e Rotação', 'Tempo(s)', 'Km/h e RPM'))
 
         self.fig[3] = Figure()
-        self.ax[3] = self.fig[3].add_subplot(111, ylabel = '(%)', title = 'Combustível', xlabel = 'Tempo')
-        #self.fig[3].set_tight_layout(True)
+        self.ax[3] = self.fig[3].add_subplot(111, ylabel = 'Combustível(%)', title = 'Combustível', xlabel = 'Tempo')
+        self.fig[3].set_tight_layout(True)
         self.Canvas[3] = FigureCanvasTkAgg(self.fig[3], self.Canvas[3])
         self.Canvas[3].show()
         self.Canvas[3].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        self.ani[3] = animation.FuncAnimation(self.fig[3], self.update_fig, lambda: self.gen_values_anim(label='Combustivel'), fargs=(self.ax[3],'c'))
+        self.ani[3] = animation.FuncAnimation(self.fig[3], self.update_fig, \
+            lambda: self.gen_values_anim(label='Combustivel'), fargs=(self.ax[3],'c', 'Combustível', 'Tempo(s)', 'Combustível(%)'))
 
         self.stop_ani()
 
@@ -527,17 +526,34 @@ class Frontend(tk.Tk):
         for ani in self.ani.values():
             ani.event_source.start()
 
-    def update_fig(self, data, ax, color):
+    def update_fig(self, data, ax, color, TITLE = None, XLABEL = None, YLABEL = None):
         t, y = data
         ax.cla()
+        if YLABEL != None:
+            ax.set(ylabel = YLABEL)
+        if TITLE != None:
+            ax.set(title = TITLE)
+        if XLABEL != None:
+            ax.set(xlabel = XLABEL)
         ax.plot(t,y, c=color)
 
-    def update_fig_2(self, data, ax, c1, c2):
+    def update_fig_2(self, data, ax, c1, c2, TITLE = None, XLABEL = None, YLABEL = None):
         t1, y1, t2, y2 = data
         ax.cla()
-        ax.set(ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo')
+        if YLABEL != None:
+            ax.set(ylabel = YLABEL)
+        if TITLE != None:
+            ax.set(title = TITLE)
+        if XLABEL != None:
+            ax.set(xlabel = XLABEL)
         ax.plot(t1,y1, c=c1)
         ax.plot(t2,y2, c=c2)
+
+    def update_fig3(self, data, ax, color):
+        t, y = data
+        ax.cla()
+        ax.set(ylabel = '%', title = 'Combustível', xlabel = 'Tempo(s)')
+        ax.plot(t,y, c=color)
 
     def gen_values_anim(self, label):
         interp = Interpretador()
@@ -560,7 +576,7 @@ class Frontend(tk.Tk):
     def callback_button_on(self):
         print("ON")
         self.pause = False
-        self.after(500, self.update_choke)
+        self.after(500, self.update_labels)
         self.after(100, self.update_box)
         self.backend.Resume()
         self.start_ani()
@@ -627,31 +643,21 @@ class Frontend(tk.Tk):
         if self.pause == False:
             self.after(100, self.update_box)
 
-    def define_choke(self, mode_canvas):
-        for ax in self.ax.values():
-            ax.set_facecolor(mode_canvas)
-
-    def update_choke(self):
+    def update_labels(self):
         interp = Interpretador() # Singleton
-        #Atribui a CHOKE o ultimo Choke registrado
-        CHOKE = interp.last('Choke')
+        
+        try:
+            self.Label2.configure(text=round((interp.last('Distribuicao')),4))
+            self.Label3.configure(text=round((interp.last('Velocidade')),4))
+            self.Label4.configure(text=round((interp.last('KmRodadosTotal')),4))
+            self.Label5.configure(text=round((interp.last('Rotacao')),4))
+            self.Label6.configure(text=round((interp.last('Tempo')),4))
+        except:
+            pass
 
-        if CHOKE is None:
-            # Nothing to be done, must wait at least one reading
-            pass
-        elif CHOKE == 1:
-            print('choke:preto')
-            self.define_choke('#000000')
-        elif CHOKE == 0:
-            print('choke:vermelho')
-            self.define_choke('#200000')
-        else:
-            #print('Other')
-            #print(CHOKE)
-            pass
         # Isso faz com que a funcao seja chamada a cada 500ms pelo root.mainloop()
         if self.pause == False:
-            self.after(500, self.update_choke)
+            self.after(500, self.update_labels)
 
     def on_close(self):
         print("[Closing]")
