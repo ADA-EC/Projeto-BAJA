@@ -179,7 +179,7 @@ class LeitorSerial():
                 readings.insert(0, time)
                 return readings
         else: # realiza leitura aleatoria
-            l = np.random.randint(0, 100, size=6)
+            l = np.random.randint(0, 100, size= len(const.SER_LABELS)-1)
             box_values = [0,0,0,0,48,48,49]
             l[0] = box_values[np.random.choice(len(box_values))]# BOX
             readings = list(l)

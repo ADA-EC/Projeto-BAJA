@@ -4,6 +4,7 @@
 SER_PORT = None
 
 ## Nome de cada campo que é recebido pelo receptor serial + tempo
+## OBS: tempo sempre deve ser o primeiro elemento
 SER_LABELS = ('Tempo',
           'Box',
           'Velocidade',
