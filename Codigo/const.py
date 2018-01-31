@@ -17,7 +17,7 @@ SER_BAUD_RATE = 9600
 
 ## Delay das animacoes do matplotlib em (ms)
 # Pode-se aumentar esse tempo caso seja necessario melhorar o desempenho
-PLOT_DELAY = 200 #(ms)
+PLOT_DELAY = 500 #(ms)
 
 ## Numero de pontos dos graficos (rolling window size)
 # Deve ser grande o suficiente de maneira que:
