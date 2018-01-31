@@ -29,4 +29,4 @@ PLOT_DELAY = 500 #(ms)
 PLOT_WIN = 15
 
 ## Tempo de responsividade das funcionalidades 'update' em (ms)
-UPDATE_DELAY = 100 # (ms)
+UPDATE_DELAY = 200 # (ms)

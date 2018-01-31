@@ -630,7 +630,8 @@ class Frontend(tk.Tk):
 
     def callback_button_tempo(self):
         print('[TEMPO (Enduro)]')
-        self.cronEnduro.Toggle()
+        if cronExec.pause == False:
+            self.cronEnduro.Toggle()
 
     def callback_button_zerar(self):
         self.callback_button_pause()
@@ -640,6 +641,9 @@ class Frontend(tk.Tk):
         self.Label5.configure(text='0')
         self.Label6.configure(text='0:00')
         self.Label7.configure(text='0:00')
+        cronExec.Zerar()
+        self.cronEnduro.Zerar()
+        self.pauseCronEnduro = True
         interp.clear()
         self.start_ani()
         print("[ZERAR]")
