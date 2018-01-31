@@ -1,3 +1,32 @@
+#!/usr/bin/python3
+################################################################################
+# Sistmea de Telemetria EESC USP Baja
+#
+# Tem como proposito realizar a telemetria do carro do grupo EESC USP Baja SAE
+################################################################################
+# Copyright (C) 2018 ADA-Projetos em Engenharia de Computacao
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+# Authors:
+# Pedro V. B. Jeronymo (pedrovbj@gmail.com)
+# Amador M. de Souza Neto (amador.neto@usp.br)
+################################################################################
+
+
+# Constantes do projeto
+import const
+
 import numpy as np
 import sys
 import serial
@@ -23,31 +52,61 @@ try:
 except ImportError:
     import dummy_threading as threading
 
-### Implements Singleton Design Pattern
-class SingletonDecorator:
-    """http://python-3-patterns-idioms-test.readthedocs.io/en/latest/Singleton.html"""
-    def __init__(self,klass):
-        self.klass = klass
-        self.instance = None
-    def __call__(self,*args,**kwds):
-        if self.instance == None:
-            self.instance = self.klass(*args,**kwds)
-        return self.instance
+class Cronometro():
+    def __init__(self):
+        self._lock = threading.Lock()
+        self.Zerar()
+
+    def Formatar(self, t):
+        mn = int(t//60)
+        sec = int(t-60*mn)
+        return mn, sec
+
+    def Aferir(self, formatted=True):
+        with self._lock:
+            if self.pause:
+                if formatted:
+                    return self.Formatar(self._t_acc)
+                else:
+                    return self._t_acc
+            self._t_running = (datetime.now()-self._t_ref).total_seconds()+self._t_acc
+            if formatted:
+                return self.Formatar(self._t_running)
+            else:
+                return self._t_running
+
+    def Pausar(self):
+        with self._lock:
+            if self.pause == False:
+                self.pause = True
+                self._t_acc = self._t_running
+
+    def Resumir(self):
+        with self._lock:
+            if self.pause == True:
+                self.pause = False
+                self._t_ref = datetime.now()
+
+    def Toggle(self):
+        with self._lock:
+            if self.pause == True:
+                self.pause = False
+                self._t_ref = datetime.now()
+            else:
+                self.pause = True
+                self._t_acc = self._t_running
+
+    def Zerar(self):
+        with self._lock:
+            self.pause = True
+            self._t_acc = 0
+            self._t_running = 0
+            self._t_ref = None
 
 class Interpretador():
-    """This class is a Singleton"""
-    # Nome de cada campo que é recebido pelo receptor serial + tempo
-    labels = ('Tempo',
-        'Box',
-        'Velocidade',
-        'Rotacao',
-        'Distribuicao',
-        'Combustivel',
-        'Posicao')
-
     def __init__(self):
         # cria o DataFrame com as colunas que serão preenchidas
-        self.df = pd.DataFrame(columns=self.labels)
+        self.df = pd.DataFrame(columns=const.SER_LABELS)
         self.df['KmRodadosAtual'] = np.nan
         self.df['KmRodadosTotal'] = np.nan
         self._KmRodadosTotal = 0
@@ -67,7 +126,7 @@ class Interpretador():
 
     def append(self, readings):
         # Append readings to Dataframe
-        self.df = self.df.append(dict(zip(self.labels, readings)), ignore_index=True)
+        self.df = self.df.append(dict(zip(const.SER_LABELS, readings)), ignore_index=True)
 
         # Calculo de distancia percorrida
         # Uma vez que é necessário o acesso aos dois últimos registros,
@@ -89,17 +148,12 @@ class Interpretador():
         df_exc = self.df[['Tempo','Velocidade', 'Rotacao', 'Distribuicao', 'Combustivel', 'KmRodadosTotal', 'Posicao']]
         df_exc.to_excel(writer,'Sheet1')
         writer.close()
-        print(self.df)
 
-
-# This indeed makes the classa a Singleton
-Interpretador = SingletonDecorator(Interpretador)
+    def clear(self):
+        self.__init__()
 
 class LeitorSerial():
-    def __init__(self, port=None, BaudRate = 9600):
-        # atribui a tstart o tempo do sistema na criação do objeto
-        self.acumulador = 0
-        self.tstart = datetime.now()
+    def __init__(self, port=None, BaudRate = const.SER_BAUD_RATE):
         self.port = port
         if self.port is not None:
             # configura a conexão serial
@@ -117,27 +171,22 @@ class LeitorSerial():
         print('[Leitor Serial iniciado]')
 
     def Leitura(self):
-        with self._lock:
-            line = str(self.ser.readline(),'utf-8')
-            readings = [np.float(x) for x in line.split(';')[:-1]]
-            time = (datetime.now()-self.tstart).total_seconds() + self.acumulador
+        if self.port is not None:
+            with self._lock:
+                line = str(self.ser.readline(),'utf-8')
+                readings = [np.float(x) for x in line.split(';')[:-1]]
+                time = cronExec.Aferir(formatted=False)
+                readings.insert(0, time)
+                return readings
+        else: # realiza leitura aleatoria
+            l = np.random.randint(0, 100, size=6)
+            box_values = [0,0,0,0,48,48,49]
+            l[0] = box_values[np.random.choice(len(box_values))]# BOX
+            readings = list(l)
+            time = cronExec.Aferir(formatted=False)
             readings.insert(0, time)
+            sleep(1)
             return readings
-
-    def LeituraAleatoria(self):
-        l = np.random.randint(0, 100, size=6)
-        box_values = [0,0,0,0,48,48,49]
-        l[0] = box_values[np.random.choice(len(box_values))]# BOX
-        readings = list(l)
-        time = (datetime.now()-self.tstart).total_seconds() + self.acumulador
-        readings.insert(0, time)
-        return readings
-
-    def Pause(self):
-        self.acumulador += (datetime.now()-self.tstart).total_seconds()
-
-    def Despause(self):
-        self.tstart = datetime.now()
 
     def MandaZero(self):
         if self.port is not None:
@@ -149,43 +198,26 @@ class LeitorSerial():
             with self._lock:
                 self.ser.write(b'1')
 
+    def Fechar(self):
+        if self.port is not None:
+            with self._lock:
+                self.ser.close()
 
 class Backend(threading.Thread):
-    def __init__(self, port=None):
-        """port: Endereco do PORT de entrada. i.e. /dev/ttyCOM6
-        Se PORT for None, faz leituras aleatorias."""
-        threading.Thread.__init__(self)
-        self.pause = True
-        self.stop = False
-        self.port = port
-        self.leitor = LeitorSerial(port=port)
-
-    def Stop(self):
-        self.stop = True
-
-    def Pause(self):
-        self.pause = True
-        self.leitor.Pause()
-
-    def Resume(self):
-        self.pause = False
-        self.leitor.Despause()
-
     def run(self):
-        interp = Interpretador() # Singleton
-        while self.stop == False:
-            if self.pause == False:
-                print("[Running Backend]")
-                readings = None
-                if self.port is not None:
-                    readings = self.leitor.Leitura()
+        while True:
+            try:
+                if cronExec.pause == False:
+                    print("[Running Backend]")
+                    readings = leitorSer.Leitura()
+                    interp.append(readings)
+                    print(interp.df.tail())
                 else:
-                    readings = self.leitor.LeituraAleatoria()
-                    sleep(1)
-
-                interp.append(readings)
-                print(interp.df.tail())
-
+                    with pausing_cv:
+                        pausing_cv.notify()
+            except:
+                # Ignores NameError's on exit
+                pass
 
 class Frontend(tk.Tk):
 
@@ -308,7 +340,7 @@ class Frontend(tk.Tk):
         self.Label6.configure(highlightbackground="#d9d9d9")
         self.Label6.configure(highlightcolor="black")
         self.Label6.configure(relief=RIDGE)
-        self.Label6.configure(text='''0''')
+        self.Label6.configure(text='''0:00''')
 
         self.Label7 = Label(top)
         self.Label7.place(relx=0.83, rely=0.68, height=57, width=191)
@@ -321,7 +353,7 @@ class Frontend(tk.Tk):
         self.Label7.configure(highlightbackground="#d9d9d9")
         self.Label7.configure(highlightcolor="black")
         self.Label7.configure(relief=RIDGE)
-        self.Label7.configure(text='''0''')
+        self.Label7.configure(text='''0:00''')
 
         self.Message2 = Message(top)
         self.Message2.place(relx=0.03, rely=0.6, relheight=0.07, relwidth=0.14)
@@ -488,44 +520,49 @@ class Frontend(tk.Tk):
         # cria elementos da janela: botoes, paineis, titulo, etc
         self.create_elem(self)
 
-        self.backend = None
-        self.pause = True
-
+        # Funcionalidade do botao de box
         self.box_button_pressed = False
 
+        # Funcionalidade de enduro
+        self.cronEnduro = Cronometro()
+
+        # capta se este cron estava pausado antes de pausar o cronometro global
+        self.pauseCronEnduro = self.cronEnduro.pause
+
+        # Graficos
         self.Canvas = {1: self.Canvas1, 2: self.Canvas2, 3: self.Canvas3}
         self.fig = {}
         self.ax = {}
         self.ani = {}
 
-        self.fig[1] = Figure()
-        self.ax[1] = self.fig[1].add_subplot(111, ylabel = 'Distribuição(%)', title = 'Distribuição', xlabel = 'Tempo(s)')
-        self.fig[1].set_tight_layout(True)
-        self.Canvas[1] = FigureCanvasTkAgg(self.fig[1], self.Canvas1)
-        self.Canvas[1].show()
-        self.Canvas[1].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+
+        self.add_fig(1, 'Distribuição', 'Tempo(s)', 'Distribuição(%)')
         self.ani[1] = animation.FuncAnimation(self.fig[1], self.update_fig, \
-            lambda: self.gen_values_anim(label='Distribuicao'), fargs=(self.ax[1],'c', 'Distribuição', 'Tempo(s)', 'Distribuição(%)'))
+            lambda: self.gen_values_anim(label='Distribuicao'), \
+            fargs=(self.ax[1],'c', 'Distribuição', 'Tempo(s)', 'Distribuição(%)'), \
+            interval=const.PLOT_DELAY)
 
-        self.fig[2] = Figure()
-        self.ax[2] = self.fig[2].add_subplot(111, ylabel = 'Km/h e RPM', title = 'Velocidade e Rotação', xlabel = 'Tempo(s)')
-        self.fig[2].set_tight_layout(True)
-        self.Canvas[2] = FigureCanvasTkAgg(self.fig[2], self.Canvas[2])
-        self.Canvas[2].show()
-        self.Canvas[2].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        self.add_fig(2, 'Velocidade e Rotação', 'Tempo(s)', 'Km/h e RPM')
         self.ani[2] = animation.FuncAnimation(self.fig[2], self.update_fig_2, \
-            self.gen_values_anim_2, fargs=(self.ax[2],'y', 'c', 'Velocidade e Rotação', 'Tempo(s)', 'Km/h e RPM'))
+            self.gen_values_anim_2, \
+            fargs=(self.ax[2],'y', 'c', 'Velocidade e Rotação', 'Tempo(s)', 'Km/h e RPM'), \
+            interval=const.PLOT_DELAY)
 
-        self.fig[3] = Figure()
-        self.ax[3] = self.fig[3].add_subplot(111, ylabel = 'Combustível(%)', title = 'Combustível', xlabel = 'Tempo')
-        self.fig[3].set_tight_layout(True)
-        self.Canvas[3] = FigureCanvasTkAgg(self.fig[3], self.Canvas[3])
-        self.Canvas[3].show()
-        self.Canvas[3].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        self.add_fig(3, 'Combustível', 'Tempo(s)', 'Combustível(%)')
         self.ani[3] = animation.FuncAnimation(self.fig[3], self.update_fig, \
-            lambda: self.gen_values_anim(label='Combustivel'), fargs=(self.ax[3],'c', 'Combustível', 'Tempo(s)', 'Combustível(%)'))
+            lambda: self.gen_values_anim(label='Combustivel'), \
+            fargs=(self.ax[3],'c', 'Combustível', 'Tempo(s)', 'Combustível(%)'), \
+            interval=const.PLOT_DELAY)
 
         self.stop_ani()
+
+    def add_fig(self, i, title, xlabel, ylabel):
+        self.fig[i] = Figure()
+        self.ax[i] = self.fig[i].add_subplot(111, title=title, xlabel=xlabel, ylabel=ylabel)
+        self.fig[i].set_tight_layout(True)
+        self.Canvas[i] = FigureCanvasTkAgg(self.fig[i], self.Canvas[i])
+        self.Canvas[i].show()
+        self.Canvas[i].get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
     def stop_ani(self):
         for ani in self.ani.values():
@@ -538,32 +575,30 @@ class Frontend(tk.Tk):
     def update_fig(self, data, ax, color, TITLE = None, XLABEL = None, YLABEL = None):
         t, y = data
         ax.cla()
-        if YLABEL != None:
+        if YLABEL is not None:
             ax.set(ylabel = YLABEL)
-        if TITLE != None:
+        if TITLE is not None:
             ax.set(title = TITLE)
-        if XLABEL != None:
+        if XLABEL is not None:
             ax.set(xlabel = XLABEL)
         ax.plot(t,y, c=color)
 
     def update_fig_2(self, data, ax, c1, c2, TITLE = None, XLABEL = None, YLABEL = None):
         t1, y1, t2, y2 = data
         ax.cla()
-        if YLABEL is None:
+        if YLABEL is not None:
             ax.set(ylabel = YLABEL)
-        if TITLE != None:
+        if TITLE is not None:
             ax.set(title = TITLE)
-        if XLABEL != None:
+        if XLABEL is not None:
             ax.set(xlabel = XLABEL)
         ax.plot(t1,y1, c=c1)
         ax.plot(t2,y2, c=c2)
 
-
     def gen_values_anim(self, label):
-        interp = Interpretador()
         while True:
-            t = interp.last('Tempo', 20, conv=False)
-            y = interp.last(label, 20, conv=False)
+            t = interp.last('Tempo', const.PLOT_WIN, conv=False)
+            y = interp.last(label, const.PLOT_WIN, conv=False)
             yield t, y
 
     def gen_values_anim_2(self):
@@ -574,120 +609,150 @@ class Frontend(tk.Tk):
             t2, y2 = next(iter_rot)
             yield t1,y1,t2,y2
 
-
-
     # em callback nao pode ter loop demorado (e jamais "while True")
     def callback_button_on(self):
-        print("ON")
-        self.pause = False
-        self.after(500, self.update_labels)
-        self.after(100, self.update_box)
-        self.backend.Resume()
+        print("[ON]")
+        cronExec.Resumir()
+        if self.pauseCronEnduro == False:
+            self.cronEnduro.Resumir()
+        self.after(const.UPDATE_DELAY, self.update_labels)
+        self.after(const.UPDATE_DELAY, self.update_box)
         self.start_ani()
 
     def callback_button_pause(self):
-        print("PAUSE")
-        self.pause = True
-        self.backend.Pause()
+        print("[PAUSE]")
+        cronExec.Pausar()
+        with pausing_cv:
+            pausing_cv.wait()
+        self.pauseCronEnduro = self.cronEnduro.pause
+        self.cronEnduro.Pausar()
         self.stop_ani()
 
     def callback_button_tempo(self):
-        #self.draw_graph1()
-        pass
+        print('[TEMPO (Enduro)]')
+        self.cronEnduro.Toggle()
 
     def callback_button_zerar(self):
-        print("ZERAR")
-        ## Deve limpar a figura
+        self.callback_button_pause()
+        self.Label2.configure(text='0')
+        self.Label3.configure(text='0')
+        self.Label4.configure(text='0')
+        self.Label5.configure(text='0')
+        self.Label6.configure(text='0:00')
+        self.Label7.configure(text='0:00')
+        interp.clear()
+        self.start_ani()
+        print("[ZERAR]")
 
     def callback_button_salvar(self):
-        # Seria legal dar a opcao de escolher o nome do arquivo antes de salvar
-        print("SALVAR")
-        interp = Interpretador() # Singleton
-        # Precisa de pausar pq o backend fica escrevendo no objeto
-        # que o interpretador quer salvar em disco. Nao tem problema de
-        # concorrencia, mas o SO fica maluco e nao salva direito, ou demora
-        # pra salvar. Pausando, ele salva rapido.
-        self.backend.Pause()
-        interp.saveExcel('baja.xlsx') #'+str(datetime.now())+
-        self.backend.Resume()
+        print('[SALVAR]')
+        filename = 'baja'+datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")+'.xlsx'
+        paused = cronExec.pause
+        cronExec.Pausar()
+        with pausing_cv:
+            pausing_cv.wait()
+        interp.saveExcel(filename)
+        if paused == False:
+            cronExec.Resumir()
+        print('[Dados salvos em: '+filename+']')
 
     def callback_button_box(self):
+        print('[BOX]')
         if self.box_button_pressed == False:
             self.box_button_pressed = True
             self.Button3.configure(foreground="#ff1900")
             self.Button3.configure(activeforeground="#ff1900")
-
         else:
             self.box_button_pressed = False
             self.Button3.configure(foreground="#000000")
             self.Button3.configure(activeforeground="#000000")
-            # self.Button3.configure(background="#2e0400")
-            # self.Button3.configure(activebackground="#2e0400")
 
     def update_box(self):
         # #Atribui a BOX o ultimo Box registrado
-        interp = Interpretador()
         BOX = interp.last('Box')
         if self.box_button_pressed:
             if BOX == 0 or BOX == ord('0'): # '0' em ascii tem valor 48
-                print('manda um')
-                self.backend.leitor.MandaUm()
+                print('[Enviando 1]')
+                leitorSer.MandaUm()
             elif BOX == ord('1'): # '1' em ascii tem valor 49
-                print('box:vermelho')
+                #print('[box:vermelho]')
                 self.Button3.configure(background="#7f0c00")
                 self.Button3.configure(activebackground="#7f0c00")
         else:
             if BOX == ord('1'):
-                print('manda zero')
-                self.backend.leitor.MandaZero()
+                print('[Enviando 0]')
+                leitorSer.MandaZero()
             elif BOX ==  ord('0'):
-                print('box:preto')
+                #print('[box:preto]')
                 self.Button3.configure(background="#d9d9d9")
                 self.Button3.configure(activebackground="#d9d9d9")
-        if self.pause == False:
-            self.after(100, self.update_box)
+        if cronExec.pause == False:
+            self.after(const.UPDATE_DELAY, self.update_box)
 
     def update_labels(self):
-        interp = Interpretador() # Singleton
-        
         try:
             self.Label2.configure(text=round((interp.last('Distribuicao')),4))
             self.Label3.configure(text=round((interp.last('Velocidade')),4))
             self.Label4.configure(text=round((interp.last('KmRodadosTotal')),4))
             self.Label5.configure(text=round((interp.last('Rotacao')),4))
-            self.Label6.configure(text=round((interp.last('Tempo')),4))
+            # tempo de exec
+            mn, sec = cronExec.Aferir()
+            self.Label6.configure(text="{:d}:{:02d}".format(mn, sec))
+            # tempo de enduro
+            mn, sec = self.cronEnduro.Aferir()
+            self.Label7.configure(text="{:d}:{:02d}".format(mn, sec))
         except:
             pass
-
-        # Isso faz com que a funcao seja chamada a cada 500ms pelo root.mainloop()
-        if self.pause == False:
-            self.after(500, self.update_labels)
+        # Isso faz com que a funcao seja chamada a cada (...)ms pelo root.mainloop()
+        if cronExec.pause == False:
+            self.after(const.UPDATE_DELAY, self.update_labels)
 
     def on_close(self):
-        print("[Closing]")
-        self.backend.Stop()
+        print("[Fechando]")
+        cronExec.Pausar()
         self.quit()
         self.destroy()
         sys.exit()
 
-def main():
+## Cronometro (GLOBAL) do tempo de execucao
+# Referencia para o Frontend e o Backend
+global cronExec
+cronExec = Cronometro()
+
+## Interpretador
+# Acessado por ambas as classes
+global interp
+interp = Interpretador()
+
+## Leitor Serial
+# Acessado por ambas as classes
+global leitorSer
+leitorSer = None
+
+## Variavel condicional para sincronizacao de threads
+# Sempre que o Frontend requesita a pausa e é necessario esperar
+# o Backend parar, se utiliza esta variavel
+global pausing_cv
+pausing_cv = threading.Condition()
+
+if __name__ == '__main__':
     PORT = None
     # Primeiro argumento é a porta serial
+    # (se nao fornecido faz leituras aleatorias)
     if len(sys.argv) > 1:
         PORT = sys.argv[1]
 
+    # Instancia Leitor Serial
+    leitorSer = LeitorSerial(port=PORT)
+
     # Cria thread do backend
     try:
-        thread_backend = Backend(port=PORT)
+        thread_backend = Backend(daemon=True)
         thread_backend.start()
     except:
-        print ("Error: unable to start backend's thread")
+        print ("Erro: nao foi possivel iniciar o Backend")
         sys.exit()
 
     # Cria interface (frontend)
     root = Frontend()
-    root.backend = thread_backend
     root.mainloop()
-
-if __name__ == '__main__':
-    main()
