@@ -167,7 +167,7 @@ class LeitorSerial():
             )
             # cria um lock para evitar acesso mutuo a porta serial
             self._lock = threading.Lock()
-            print('[Conexao serial aberta]')
+            print('[ Conexao serial aberta na porta', self.port, ']')
         print('[Leitor Serial iniciado]')
 
     def Leitura(self):
@@ -736,9 +736,14 @@ global pausing_cv
 pausing_cv = threading.Condition()
 
 if __name__ == '__main__':
+    ## Definicao da porta serial
+    # Prioridade: 1. Argumento; 2. const.py; 3. Leituras aleatorias
     PORT = None
+    if const.SER_PORT is not None:
+        PORT = const.SER_PORT
     # Primeiro argumento é a porta serial
-    # (se nao fornecido faz leituras aleatorias)
+    # Se fornecido nos argumentos sobrescreve const.py
+    # Se nao fornecido aqui nem em const.py, faz leituras aleatorias
     if len(sys.argv) > 1:
         PORT = sys.argv[1]
 

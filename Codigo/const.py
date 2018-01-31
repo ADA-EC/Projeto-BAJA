@@ -1,3 +1,8 @@
+## Porta serial a ser utilizada. Por exemplo, '/dev/ttyCOM6'
+# Se outra porta serial for passada como parametro na execuçao do programa
+# esta porta sera sobrescrita
+SER_PORT = None
+
 ## Nome de cada campo que é recebido pelo receptor serial + tempo
 SER_LABELS = ('Tempo',
           'Box',
