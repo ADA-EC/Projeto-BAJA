@@ -44,6 +44,7 @@ from matplotlib import style
 style.use("ggplot")
 
 from tkinter import *
+from tkinter import messagebox
 import tkinter.ttk as ttk
 import tkinter as tk
 
@@ -739,9 +740,40 @@ leitorSer = None
 global pausing_cv
 pausing_cv = threading.Condition()
 
+
+class PortDialog(tk.Toplevel):
+    def __init__(self, parent, prompt, port):
+        tk.Toplevel.__init__(self, parent)
+        self.var = tk.StringVar(value=port)
+        self.label = tk.Label(self, text=prompt)
+        self.entry = tk.Entry(self, textvariable=self.var)
+        self.entry.config(selectbackground='#000e7f', selectforeground='#ffffff')
+        self.entry.selection_range(0, END)
+        self.entry.icursor(END)
+        self.ok_button = tk.Button(self, text="OK", command=self.on_ok)
+        self.label.pack(side="top", fill="x")
+        self.entry.pack(side="top", fill="x")
+        self.ok_button.pack()
+        self.entry.bind("<Return>", self.on_ok)
+        self.attributes("-topmost", True)
+
+    def on_ok(self, event=None):
+        self.destroy()
+
+    def show(self):
+        self.grab_set()
+        self.wm_deiconify()
+        self.entry.focus_force()
+        self.wait_window()
+        self.grab_release()
+        return self.var.get()
+
 if __name__ == '__main__':
+    # Cria interface (frontend)
+    root = Frontend()
+
     ## Definicao da porta serial
-    # Prioridade: 1. Argumento; 2. const.py; 3. Leituras aleatorias
+    # Prioridade: 1. Argumento; 2. Janela de dialogo - const.py; 3. Leituras aleatorias
     PORT = None
     if const.SER_PORT is not None:
         PORT = const.SER_PORT
@@ -750,18 +782,26 @@ if __name__ == '__main__':
     # Se nao fornecido aqui nem em const.py, faz leituras aleatorias
     if len(sys.argv) > 1:
         PORT = sys.argv[1]
+    else:
+        # Janela de dialogo para usuario alterar a porta serial
+        PORT = PortDialog(root, "Porta serial:", PORT).show()
+        PORT = PORT.strip() # mesmo que trim() em Java
+        if PORT == '':
+            PORT = None
 
-    # Instancia Leitor Serial
-    leitorSer = LeitorSerial(port=PORT)
-
-    # Cria thread do backend
     try:
+        # Instancia Leitor Serial
+        leitorSer = LeitorSerial(port=PORT)
+
+        # Cria thread do backend
         thread_backend = Backend(daemon=True)
         thread_backend.start()
     except:
-        print ("Erro: nao foi possivel iniciar o Backend")
+        err_msg = "Nao foi possivel iniciar o Backend.\nVerifique a porta serial informada: \'{}\'".format(PORT)
+        print("ERRO:", err_msg)
+        root.withdraw()
+        messagebox.showerror("ERRO", err_msg)
         sys.exit()
 
-    # Cria interface (frontend)
-    root = Frontend()
+    # Entra no mainloop do Frontend
     root.mainloop()

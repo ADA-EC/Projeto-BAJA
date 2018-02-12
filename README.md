@@ -1,6 +1,16 @@
-# Como rodar no windows:
+# Escolha da porta serial
+Pode-se informar uma porta serial na execução do programa:
 
-1) Instalar o [Anaconda](https://www.anaconda.com/download/)(versão para Python 3.6 ou versão mais recente de Python3): 
+```
+python3 baja.py /dev/ttyCOM6
+```
+
+Caso uma porta serial não seja informada, uma janela de dialogo é aberta, perguntando a porta a ser utilizada. A porta serial padrão pode ser configurada modificando a constante SER_PORT no arquivo "const.py".
+
+
+# Como rodar no Windows:
+
+1) Instalar o [Anaconda](https://www.anaconda.com/download/)(versão para Python 3.6 ou versão mais recente de Python3):
 
 2) Instalar tk/tcl (responsável pela GUI) e pyserial (responsável pela comunicação serial).
 Para isso rodar o Anaconda, que abrirá um terminal. Nele rodar as seguintes linhas de comando:
