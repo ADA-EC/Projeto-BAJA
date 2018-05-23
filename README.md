@@ -1,3 +1,8 @@
+# Projeto BAJA
+O Projeto BAJA consiste em uma interface criada para receber e exibir dados de telemetria do grupo EESC USP Baja SAE.
+Foi feito em Python para ser alternativa leve à interface antiga do grupo, feita em MatLab.
+
+
 # Escolha da porta serial
 Pode-se informar uma porta serial na execução do programa:
 
